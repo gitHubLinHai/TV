@@ -1,0 +1,31 @@
+搜看 v1.0.13（113）— 页签式布局重构
+日期：2026-10-29
+
+背景
+用户反馈首页功能入口堆叠、布局混乱，并给出参考：底部四个大页签"搜索 / 电影电视 / 短剧 / 音乐"。
+
+本次修改（仅网页层，原生与 v1.0.11 相同，原生壳仍为 8）
+1. 底部导航改为四个大页签：搜索、电影电视（555 影视）、短剧剧场、音乐榜单，各带图标，活动页签亮色加顶部指示条。
+2. 影视/短剧/音乐从首页弹窗改为整页视图（非模态 page-dialog，全屏铺开、标题吸顶），页签互斥：打开一个自动关闭其他；底部页签在整页内保持可见可点。
+3. 首页"搜索"页精简：移除原影视/短剧/音乐三张入口卡（由页签取代），保留网页/夸克搜索、常用入口（夸克网盘/热搜趋势/我的下载）、最近搜索。
+4. 视觉精致化：影视海报墙 3 列（宽屏 5 列）圆角卡片、两行标题截断；音乐榜单行制（前三名亮色序号）；短剧卡片统一圆角；整页标题区吸顶毛玻璃、副标题单行。
+5. 返回逻辑：Android 返回键与"×"关页回到搜索；影视页内先返回片单再关页；页签/关闭后底部高亮自动同步（TVTabs.sync）。
+6. 预览服务未连接时的中文指引提示沿用 v1.0.12。
+
+实现要点
+- page-dialog 用 dialog.show()（非模态）+ CSS fixed 全屏，不入 top-layer，底部页签（z-index 60）保持可点；media-dialog、settings、bookmarks、短剧网页预览播放器仍为 showModal 模态。
+- 复用原有元素 id（vod-open/drama-open/music-open 变为页签按钮；vod-dialog/music-dialog/drama-dialog 变为整页），模块内绑定与既有测试断言基本不变。
+
+真实验证结果（2026-10-29）
+1. 网页全量回归通过：test_ui（新增页签互斥与高亮断言）、test_vod、test_vod_custom、test_music、test_features109、test_netdisk、test_bookmarks、test_share_validation、test_privacy、test_history、test_search_flow、test_search_memory。
+2. live 通过：影视 5 分类各 23 部、音乐热歌榜 200 首与直链解析。
+3. Android 11 模拟器（v1.0.13 APK）四项全过：影视内播 2889960ms；短剧 5814000ms；自动连播第二集自开；音乐榜单 200 首真机播放 30040ms。返回后选集/片单/列表均保持。
+4. 四页截图存于 work/ui13-home.png、ui13-vod.png、ui13-drama.png、ui13-music.png。
+
+产物
+- release\TV-v1.0.13.apk（versionCode 113，assets 为新界面；原生无改动）、TV-v1.0.13.wgt、version.json（minShellVersion=8）。
+- 网页预览：python tools/preview_server.py --port 8138，访问 http://127.0.0.1:8138/?v=113。
+
+已知边界
+- 纯界面重构，功能边界与 v1.0.11/v1.0.12 一致；远程热更源仍未发布。
+- 桌面宽屏下整页视图内容区仍为单列自适应；如需桌面双栏可后续迭代。

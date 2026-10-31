@@ -1,0 +1,24 @@
+const assert=require('node:assert/strict');
+const {execFileSync}=require('node:child_process');
+const adb=process.env.TV_ADB || 'D:/SDK/platform-tools/adb.exe';
+const device=process.env.TV_DEVICE || 'emulator-5580';
+const appPid=execFileSync(adb,['-s',device,'shell','pidof','com.seagull.tv'],{encoding:'utf8'}).trim();
+execFileSync(adb,['-s',device,'forward','tcp:9238','localabstract:webview_devtools_remote_'+appPid]);
+(async()=>{
+ const pages=await (await fetch('http://127.0.0.1:9238/json/list')).json(); console.log(pages.map(x=>({id:x.id,url:x.url})));
+ const socket=new WebSocket(pages.find(x=>x.url.startsWith('https://app.tv.local/')).webSocketDebuggerUrl);
+ await new Promise((r,j)=>{socket.onopen=r;socket.onerror=j});let id=0;const pending=new Map();
+ socket.onmessage=e=>{const msg=JSON.parse(e.data);if(pending.has(msg.id)){pending.get(msg.id)(msg);pending.delete(msg.id)}};
+ const call=(method,params={})=>new Promise(r=>{pending.set(++id,r);socket.send(JSON.stringify({id,method,params}))});
+ const evaluate=async(expression)=>{let x=await call('Runtime.evaluate',{expression,returnByValue:true});if(x.result.exceptionDetails)throw new Error(JSON.stringify(x.result.exceptionDetails));return x.result.result.value;};
+ console.log(await evaluate('JSON.stringify({source:document.querySelector("#source").selectedOptions[0].textContent,bridge:typeof TVBridge,version:document.querySelector("#version").textContent})'));
+ assert.equal(await evaluate('document.querySelector("#source").selectedOptions[0].textContent'),'夸克');
+ await evaluate('document.querySelector("#query").value="test video";document.querySelector("#search-form").dispatchEvent(new Event("submit",{cancelable:true}));');
+ socket.close();
+ await new Promise(r=>setTimeout(r,1500));
+ const opened=await (await fetch('http://127.0.0.1:9238/json/list')).json();console.log(opened.map(x=>({id:x.id,url:x.url})));
+ const external=opened.find(x=>x.url.includes('quark.sm.cn/s'));assert(external,'Quark search opens in independent WebView');
+ const remote=new WebSocket(external.webSocketDebuggerUrl);await new Promise(r=>remote.onopen=r);
+ const result=await new Promise(r=>{remote.onmessage=e=>{const m=JSON.parse(e.data);if(m.id===1)r(m)};remote.send(JSON.stringify({id:1,method:'Runtime.evaluate',params:{expression:'typeof TVBridge',returnByValue:true}}));});assert.equal(result.result.result.value,'undefined');remote.close();
+ console.log('PASS: real Android homepage renders, native bridge works, web search opens Quark search, external page has no TVBridge.');
+})().catch(e=>{console.error(e);process.exitCode=1;});

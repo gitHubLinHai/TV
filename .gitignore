@@ -1,0 +1,11 @@
+android-shell/app/build/
+android-shell/app/src/main/assets/
+android-shell/local.properties
+android-shell/.gradle/
+work/
+*.apk
+*.keystore
+__pycache__/
+.signing/
+web-assets/
+*.idsig

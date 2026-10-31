@@ -1,0 +1,19 @@
+plugins { id 'com.android.application' }
+def appManifest = new groovy.json.JsonSlurper().parse(file('../../web/manifest.json'))
+android {
+ namespace 'com.seagull.tv'
+ compileSdk 36
+ defaultConfig {
+  applicationId 'com.seagull.tv'
+  minSdk 23
+  targetSdk 34
+  versionCode appManifest.versionCode
+  versionName appManifest.versionName
+ }
+ sourceSets.main.assets.srcDirs = ['../../web-assets']
+ compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+}
+tasks.register('syncWeb', Copy) { from('../../web') { into 'www' }; from '../third-party-notices.txt'; into '../../web-assets' }
+preBuild.dependsOn syncWeb
+
+dependencies { implementation "androidx.media3:media3-exoplayer:1.5.1"; implementation "androidx.media3:media3-exoplayer-hls:1.5.1" }

@@ -1,0 +1,19 @@
+搜看 v1.0.12（112）— 预览服务离线时的明确提示
+日期：2026-10-29
+
+背景
+用户在网页预览里打开影视片库和音乐榜单，页面与弹窗正常，但列表为空、状态显示浏览器原始报错 "Failed to fetch"。根因：本地预览服务（tools/preview_server.py，端口 8138）未在运行，页面所有 /api 请求直接失败。APK 不受影响（走原生请求，不依赖该服务）。
+
+本次修改（仅网页层）
+- vod.js / music.js / netdisk.js 的网页预览请求路径：网络层失败（TypeError/AbortError，即服务未启动或连接被拒）时，不再透出英文 "Failed to fetch"，改为明确提示"本地预览服务未连接：请先运行 python tools/preview_server.py --port 8138 并保持窗口开启，再刷新本页重试"。服务正常返回的业务错误信息不变。
+
+验证
+- 模拟 fetch 网络失败：影视与音乐弹窗均显示新的中文指引（通过）。
+- 回归：test_vod、test_vod_custom、test_music、test_netdisk、test_music_live、test_vod_live 全部通过（live 测试同时确认预览服务恢复后真实片单与榜单正常加载）。
+
+产物
+- release\TV-v1.0.12.wgt、version.json（versionCode 112，minShellVersion=8）。
+- release\TV-v1.0.12.apk：为保持产物一致重新构建并安装到测试模拟器；原生无改动，功能与 v1.0.11 相同。
+
+使用提醒
+- 网页预览必须保持运行 python tools/preview_server.py --port 8138 的窗口开着；关掉窗口后页面仍在，但影视/音乐/网盘接口会显示上述提示而不是空列表。

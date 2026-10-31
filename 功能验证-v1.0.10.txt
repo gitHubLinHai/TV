@@ -1,0 +1,34 @@
+搜看 v1.0.10（110）— 555 影视片库与旧系统证书兼容
+日期：2026-10-29
+工程：E:\myUnity\TV
+
+本次需要覆盖安装新版 APK：原生壳版本提升到 7；仅安装 WGT 无法获得原生抓取（vodRequest）与证书兼容。
+
+已实现
+1. 新增"555 影视"入口（https://www.555yy1.com）：首页推荐、电视剧/电影/短剧/动漫/综艺纪录分类、站内搜索、详情线路与选集、分页"更多"。
+2. 原生 VodHttp 只读抓取：路径白名单（首页/分类/详情/播放页/搜索页 .html），仅允许同域 HTTPS 跳转且最多 3 次，支持 gzip，单页上限 4MiB；不发送 Cookie。网页端用 DOMParser 解析，站点 script/iframe/img 等改为 inert 标签不执行，封面图 referrerpolicy=no-referrer，跨域/带查询参数的链接一律拒绝。
+3. 播放直链要求：HTTPS 且路径以 m3u8/mp4/m4v/webm 结尾（player_ 变量 encrypt 0/1/2 解码）。需要站点解析器的线路明确提示"请切换线路"，不内嵌站点播放器。原生播放器请求带来源 Referer。
+4. 旧 Android 证书兼容：部分新根证书不在旧系统信任库，用 network security config 为限定域名补充信任锚——555yy1.com（Sectigo R46）、xgplay20.com 与 jimxtc.com（ISRG Root X2）、ppqrrs.com（Certum Trusted Root CA）。全部保留系统根校验和主机名校验，未关闭证书验证；明文只允许 127.0.0.1/10.0.2.2/localhost 本地预览。
+5. 构建脚本：d8 输入先打包 project-classes.jar，绕开 Windows 命令行长度限制；所有构建步骤失败立即中止，不会再出现"构建失败却继续安装旧包"。
+
+真实验证结果（2026-10-29）
+1. 网页 live（test_vod_live.cjs）：电视剧 23 部；电影/短剧/动漫/综艺纪录各 23 部；搜索"嫁金钗"命中；详情 17 条线路；选集解析与 HTTPS 直链解析全部通过。
+2. Android 11 模拟器（VodInstrumentation）：真实内播时长 2889960ms（约 48 分钟），进度正常推进；返回后选集视图与原片单保持。
+3. Android 短剧（VodDuanjuInstrumentation，本轮新增）：短剧分类 23 部，原生播放 5346680ms（约 89 分钟合集文件），返回后选集与片单保持。播放域名 rstu6.com 的证书链自带到 Certum Trusted Network CA（老系统内置根）的交叉签名，Android 11 原生即可校验，未新增信任配置。
+4. 回归全部通过：test_vod、test_features109、test_netdisk、test_bookmarks、test_share_validation、test_privacy、test_history、test_ui、test_search_cache、test_package、test_native_update。
+
+安装与使用
+- 覆盖安装 release\TV-v1.0.10.apk（同一个人签名，versionCode 110，原生壳 7）；之前装过不同签名的测试包需先卸载。
+- 网页预览必须用 python tools/preview_server.py --port 8138，访问 http://127.0.0.1:8138/?v=110（新增 /api/vod 代理）。
+- WGT：release\TV-v1.0.10.wgt 与 version.json 已生成，SHA-256 校验一致；远程更新源仍未发布，线上热更状态与 v1.0.9 相同。
+
+已知边界
+- 555 是第三方公开站点：片单、线路数量、CDN 域名会随时变化；某条线路打不开属正常，切换线路或稍后重试。不承诺可用率，不内置任何影视内容。
+- 桌面 Chrome 预览可能无法直接播 HLS，APK 内使用 Media3 原生播放；预览页只验证直链解析。
+- 播放结束不自动连播下一集：需返回后选择下一集。网页预览的本地片库短剧剧场支持自动连播；APK 内播结束即停在当前集（见"短剧完整性"）。
+- 网盘、短剧剧场（本地片库）、书签、历史、无痕等既有功能未改动，行为与 v1.0.9 一致。
+
+短剧完整性结论
+- 555 短剧分类：分类列表、详情、线路选集、原生播放、返回保持，Android 与网页均已实测通过，可用。
+- 短剧剧场（本地 JSON 片库）：导入/分类/热度排序/选集/内播/无痕只读，夹具测试通过；仍无默认片库，需要自行导入 HTTPS 直链片库，链接过期需重新导入（见 短剧片库格式.txt）。
+- 缺口：APK 原生播放器播完不自动连播（红果类产品的核心体验）；如需"看完一集自动下一集"，需要在播放结束回调里联动选集列表，属于后续原生改动。

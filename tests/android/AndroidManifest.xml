@@ -1,0 +1,18 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.seagull.tv.tests">
+ <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="34"/>
+ <instrumentation android:name="com.seagull.tv.tests.UpdateInstrumentation" android:targetPackage="com.seagull.tv"/>
+ <instrumentation android:name="com.seagull.tv.tests.NetdiskInstrumentation" android:targetPackage="com.seagull.tv"/>
+ <instrumentation android:name="com.seagull.tv.tests.PrivacyInstrumentation" android:targetPackage="com.seagull.tv"/>
+ <instrumentation android:name="com.seagull.tv.tests.BookmarkInstrumentation" android:targetPackage="com.seagull.tv"/>
+ <instrumentation android:name="com.seagull.tv.tests.VodInstrumentation" android:targetPackage="com.seagull.tv"/>
+ <instrumentation android:name="com.seagull.tv.tests.VodCoverInstrumentation" android:targetPackage="com.seagull.tv"/>
+ <instrumentation android:name="com.seagull.tv.tests.Vod4kvmInstrumentation" android:targetPackage="com.seagull.tv"/>
+ <instrumentation android:name="com.seagull.tv.tests.VodDuanjuInstrumentation" android:targetPackage="com.seagull.tv"/>
+ <instrumentation android:name="com.seagull.tv.tests.VodAutoNextInstrumentation" android:targetPackage="com.seagull.tv"/>
+ <instrumentation android:name="com.seagull.tv.tests.MusicInstrumentation" android:targetPackage="com.seagull.tv"/>
+ <instrumentation android:name="com.seagull.tv.tests.MusicLyricsInstrumentation" android:targetPackage="com.seagull.tv"/>
+ <instrumentation android:name="com.seagull.tv.tests.MusicBackgroundInstrumentation" android:targetPackage="com.seagull.tv"/>
+ <instrumentation android:name="com.seagull.tv.tests.ParallelPlayInstrumentation" android:targetPackage="com.seagull.tv"/>
+ <instrumentation android:name="com.seagull.tv.tests.PlayerGestureInstrumentation" android:targetPackage="com.seagull.tv"/><application android:hasCode="true"/>
+ <instrumentation android:name="com.seagull.tv.tests.StateProbeInstrumentation" android:targetPackage="com.seagull.tv"/><application android:hasCode="true"/>
+</manifest>

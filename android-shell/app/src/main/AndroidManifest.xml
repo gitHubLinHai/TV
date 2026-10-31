@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.seagull.tv" android:versionCode="132" android:versionName="1.0.32">
+ <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="34"/>
+ <uses-permission android:name="android.permission.INTERNET"/>
+ <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+ <uses-permission android:name="android.permission.WAKE_LOCK"/>
+ <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+ <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIAPLAYBACK"/>
+ <application android:label="搜看" android:icon="@drawable/icon" android:allowBackup="false" android:theme="@style/AppTheme" android:networkSecurityConfig="@xml/network_security">
+  <activity android:name=".VideoActivity" android:exported="false" android:configChanges="orientation|screenSize|keyboardHidden"/>
+  <service android:name=".MusicKeepService" android:exported="false" android:foregroundServiceType="mediaPlayback"/>
+  <activity android:name=".Vod4kvmResolveActivity" android:process=":vodresolver" android:exported="false" android:excludeFromRecents="true" android:noHistory="true" android:theme="@style/VodResolverTheme"/>
+  <activity android:name=".PrivateBrowserActivity" android:process=":private" android:exported="false" android:excludeFromRecents="true" android:configChanges="orientation|screenSize|keyboardHidden"/>
+  <activity android:name=".BrowserActivity" android:exported="false" android:configChanges="orientation|screenSize|keyboardHidden"/>
+  <activity android:name=".MainActivity" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden">
+   <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+  </activity>
+ </application>
+</manifest>
+

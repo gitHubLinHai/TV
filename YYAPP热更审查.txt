@@ -1,0 +1,33 @@
+YYAPP 热更新审查（2026-10-28）
+审查范围：E:\myUnity\YYAPP 的当前源码；未修改该项目的跟踪文件。
+
+结论
+当前资源与 APK 源码版本为 1.0.12 / 112。断点续传已经实现，不能沿用旧记录中“尚未实现”的结论。
+现有 14 个真实 HTTP/JVM 续传用例、27 个实际 Java 包校验用例，以及多源选择/下载换源/损坏包拒绝/Wi-Fi 中断/目录恢复测试均通过。JS 更新状态测试也通过。
+没有在这些测试中发现断点续传主链路的回归；但发现以下明确的恢复和边界缺口。
+
+1. [P2] 新版网页还没成功启动，旧资源备份就被删除
+位置：android-shell/app/src/main/java/com/family/englishquest/UpdateStorage.java:14。
+触发：一个 ZIP、哈希、文件列表和版本都正确，但 js/app.js 存在运行错误的更新包安装完成；下次启动调用 recover 时，只要 www 存在，就删除 www_old。
+后果：目录切换恢复正常，但无法根据页面实际启动结果回退，坏脚本可造成持续白屏。
+证据：TV/tests/audit_yyapp.py 对实际 UpdateStorage 类执行安装+启动恢复，确认页面尚未回报任何就绪状态时 www_old 已不存在。此测试不在 YYAPP 目录写入任何夹具。
+新 TV 项目处理：新版试运行标记、pageReady 确认、15 秒无确认回退、试运行中杀进程后重启回退、失败版本隔离。真实 Android 夹具已验证坏脚本回退并保留 localStorage。
+
+2. [P2，稳健性] 解压没有展开总量、单文件大小或条目数量上限
+位置：android-shell/app/src/main/java/com/family/englishquest/UpdatePackage.java:40、52。
+触发：一个哈希正确但包含异常大展开内容的包。当前压缩包大小和 SHA-256 校验并不能限制解压后的磁盘占用。
+后果：可能耗尽应用空间或长时间占用更新线程；本轮未制造设备磁盘耗尽。
+证据：对实际 UpdatePackage 类提供一个含 33MiB 压缩重复内容条目的完整包，校验和解压成功，确认没有展开体积限制。不能把这一结果等同于已证明远程可利用；它仍要求该包成为可信更新候选。
+新 TV 项目处理：32MiB 下载包、32MiB 单条目、64MiB 展开总量、4096 条目上限，异常包测试验证会被拒绝。
+
+3. [安全边界风险] 外部页面未与原生桥接隔离
+位置：android-shell/app/src/main/java/com/family/englishquest/MainActivity.java:78、80、82。
+观察：同一 WebView 启用文件页面跨源访问，使用默认 WebViewClient，并注册 AndroidBridge。未发现按来源过滤导航或把外部页面放到不带桥接的 WebView 的逻辑。
+影响：如果页面导航到第三方站点，原生桥接仍属于该 WebView；这不适合直接复用为需要浏览任意网站的 TV 壳。YYAPP 本身是否存在可到达的外部导航入口，本轮没有做攻击链验证，不能宣称已经存在可利用攻击路径。
+新 TV 项目处理：本地可信虚拟 HTTPS 首页与外部 BrowserActivity 分离；后者不注册桥接。模拟器中真实外部页的 typeof TVBridge 为 undefined。
+
+其他边界
+- 本轮未安装或运行 YYAPP APK，不把 JVM/JS 测试等同于 YYAPP 真机验证。
+- HBuilderX 备用分支没有在本轮进行运行时验收。
+- CDN 延迟仍是发布侧问题；现有代码已选择多个源的最高有效版本并保存待完成更新。
+- 没有修改、重新打包或发布 YYAPP，也没有清理其已有未跟踪截图或 tmp。
