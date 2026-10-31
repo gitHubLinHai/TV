@@ -1,10 +1,10 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 132,
-  "versionName": "1.0.32",
+  "versionCode": 133,
+  "versionName": "1.0.33",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.32.wgt",
-  "wgtSize": 58768,
-  "wgtSha256": "a095da670b0b35531389232f3cdd628a30691e8ec0838a1fecbf10b31dc14676",
-  "notes": "移除重复的短剧页签：短剧入口保留在影视页分类芯片中"
+  "wgt": "TV-v1.0.33.wgt",
+  "wgtSize": 59727,
+  "wgtSha256": "ede82c6bbc0de3b85611904a11a94bc2997d2ad5c51cf775b38519282a831f63",
+  "notes": "影视页新增最近更新专区（首页混合流），卡片按类型显示不同样式徽标与描边"
 }
