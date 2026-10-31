@@ -17,14 +17,13 @@ header .bookmarks-button{margin-left:auto;margin-right:8px;padding:8px;font-size
 
 #drama-open{width:100%}
 
-#vod-open{width:100%}#vod-dialog{width:min(880px,calc(100vw - 24px));max-width:880px}#vod-status{font-size:13px;overflow-wrap:anywhere;line-height:1.7}.vod-tools,.vod-search-row{display:flex;gap:10px;align-items:center}.vod-search-row input{flex:1;min-width:0}.vod-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px 8px;margin:18px 0}.vod-card{background:transparent;color:#edf3eb;text-align:left;min-width:0;padding:0}.vod-card strong{display:block;font-size:13px;margin-top:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vod-card small{display:block;color:#89938f;font-size:11px;margin-top:5px}.vod-cover{aspect-ratio:2/3;border-radius:12px;background:linear-gradient(135deg,#39493b,#242b35);overflow:hidden}.vod-cover img{width:100%;height:100%;object-fit:cover}
+#vod-open{width:100%}#vod-dialog{width:min(880px,calc(100vw - 24px));max-width:880px}#vod-status{font-size:13px;overflow-wrap:anywhere;line-height:1.7}.vod-tools,.vod-search-row{display:flex;gap:10px;align-items:center}.vod-search-row input{flex:1;min-width:0}.vod-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 14px;margin:18px 0}.vod-card{background:transparent;color:#edf3eb;text-align:left;min-width:0;padding:0}.vod-card strong{display:block;font-size:13px;margin-top:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vod-card small{display:block;color:#89938f;font-size:11px;margin-top:5px}.vod-cover{aspect-ratio:2/3;border-radius:12px;background:linear-gradient(135deg,#39493b,#242b35);overflow:hidden}.vod-cover img{width:100%;height:100%;object-fit:cover}
 .vod-admin{margin:0 0 12px;border:1px solid #2c342e;border-radius:10px;padding:10px 14px}
 .vod-admin summary{cursor:pointer;font-size:12px;color:#89938f}
 .vod-admin[open] summary{margin-bottom:10px}
 .vod-admin label{display:block;margin:10px 0 6px;font-size:12px;color:#89938f}
 /* 类型徽标与卡片描边：不同类型不同样式（电视剧蓝 / 电影金 / 短剧粉 / 动漫绿 / 综艺紫 / 其他灰） */
-.type-badge{position:absolute;top:6px;left:6px;z-index:2;font-size:9px;line-height:1;padding:3px 5px;border-radius:6px;font-weight:600;color:#fff;background:#5b6663;box-shadow:0 2px 6px #0009}
-@media(min-width:760px){.type-badge{font-size:10px;padding:4px 7px;top:8px;left:8px;border-radius:7px;letter-spacing:.5px}}
+.type-badge{position:absolute;top:10px;left:10px;z-index:2;font-size:12px;line-height:1;padding:5px 9px;border-radius:8px;font-weight:600;letter-spacing:.5px;color:#fff;background:#5b6663;box-shadow:0 2px 6px #0009}
 .badge-tv{background:linear-gradient(135deg,#2563eb,#38bdf8)}
 .badge-film{background:linear-gradient(135deg,#b45309,#f59e0b)}
 .badge-drama{background:linear-gradient(135deg,#be185d,#f472b6)}
@@ -38,7 +37,7 @@ header .bookmarks-button{margin-left:auto;margin-right:8px;padding:8px;font-size
 .vod-card.kind-anime .vod-cover{box-shadow:inset 0 3px 0 #22c55e}
 .vod-card.kind-variety .vod-cover{box-shadow:inset 0 3px 0 #8b5cf6}
 .vod-card.kind-tv small{color:#7fa7e8}.vod-card.kind-film small{color:#d9a441}
-.vod-card.kind-drama small{color:#e08bb8}.vod-card.kind-anime small{color:#7fc98a}.vod-card.kind-variety small{color:#a48fdd}#vod-routes{width:100%;margin:12px 0}#vod-video{width:100%;max-height:55vh}#vod-description{font-size:12px;line-height:1.8;color:#a3afa5}#vod-episodes button{font-size:12px;min-width:70px}#vod-dialog>small{display:block;margin-top:20px;font-size:11px;color:#89938f;line-height:1.8}@media(max-width:500px){.vod-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 8px}}
+.vod-card.kind-drama small{color:#e08bb8}.vod-card.kind-anime small{color:#7fc98a}.vod-card.kind-variety small{color:#a48fdd}#vod-routes{width:100%;margin:12px 0}#vod-video{width:100%;max-height:55vh}#vod-description{font-size:12px;line-height:1.8;color:#a3afa5}#vod-episodes button{font-size:12px;min-width:70px}#vod-dialog>small{display:block;margin-top:20px;font-size:11px;color:#89938f;line-height:1.8}@media(max-width:500px){.vod-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 12px}}
 .vod-cover{display:grid;place-items:center;color:#9daa9e;font-size:11px}
 
 #music-open{width:100%}#music-dialog{width:min(880px,calc(100vw - 24px));max-width:880px}#music-status{font-size:13px;overflow-wrap:anywhere;line-height:1.7}.song-row{width:100%;display:flex;align-items:center;gap:14px;border-top:1px solid #ffffff08;background:transparent;color:#b9cbbe;text-align:left;padding:13px 0}.song-row:first-child{border-top:0}.song-row b{min-width:28px;color:var(--lime);font-size:13px;font-weight:600}.song-info{flex:1;min-width:0}.song-info strong{display:block;font-size:13px;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.song-info small{display:block;color:#6e8275;font-size:11px;margin-top:3px}#music-audio{width:100%;margin:16px 0}#music-dialog>small{display:block;margin-top:20px;font-size:11px;color:#89938f;line-height:1.8}
@@ -63,8 +62,7 @@ header .bookmarks-button{margin-left:auto;margin-right:8px;padding:8px;font-size
 .page-dialog>p,.page-dialog>small{margin-left:2px}
 .page-dialog>small{color:#5f7268;margin-top:18px;line-height:1.8}
 
-.vod-grid{grid-template-columns:repeat(8,minmax(0,1fr));gap:14px 8px}
-@media(min-width:760px){.vod-grid{grid-template-columns:repeat(8,minmax(0,1fr));gap:20px 12px}}
+@media(min-width:760px){.vod-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px 16px}}
 .vod-cover{border-radius:11px;border:1px solid #ffffff0a;box-shadow:0 5px 16px #00000066}
 .vod-card{border-radius:12px;padding-bottom:2px}
 .vod-card:active{background:#ffffff07}
