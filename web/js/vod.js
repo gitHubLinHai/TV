@@ -46,7 +46,7 @@
   function resolve4kvm(target){
     target=Vod4KVM.sitePath(target);
     if(!bridge||!bridge.vod4kvmResolve)return Promise.reject(new Error('4KVM 动态播放仅支持新版 APK'));
-    return new Promise(function(resolve,reject){var id='vod'+(++serial);var timer=setTimeout(function(){delete pending[id];reject(new Error('4KVM 播放地址解析超时，请重试'));},35000);pending[id]={resolve:resolve,reject:reject,timer:timer};bridge.vod4kvmResolve(id,target);});
+    return new Promise(function(resolve,reject){var id='vod'+(++serial);var timer=setTimeout(function(){delete pending[id];reject(new Error('4KVM 播放地址解析超时，请重试'));},50000);pending[id]={resolve:resolve,reject:reject,timer:timer};bridge.vod4kvmResolve(id,target);});
   }
   // ===== 接口源（maccms 标准 JSON）：任意提供 /api.php/provide/vod/ 的站点均可添加 =====
   function apiRequest(base,query){

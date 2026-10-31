@@ -40,7 +40,7 @@ public final class Vod4kvmResolveActivity extends Activity {
             @Override public void onReceivedError(WebView view,WebResourceRequest request,WebResourceError error){if(request.isForMainFrame())finishError("4KVM 播放页连接失败");}
         });
         setContentView(resolver);resolver.loadUrl("https://"+Vod4kvmHttp.HOST+path);
-        handler.postDelayed(()->finishError("4KVM 播放地址解析超时，请重试"),30000);
+        handler.postDelayed(()->finishError("4KVM 播放地址解析超时，请重试"),45000);
     }
     private void capture(String value){
         try{android.net.Uri u=android.net.Uri.parse(value);String host=String.valueOf(u.getHost()).toLowerCase(Locale.ROOT),path=String.valueOf(u.getPath()).toLowerCase(Locale.ROOT);

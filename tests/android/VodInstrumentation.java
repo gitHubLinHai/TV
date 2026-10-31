@@ -12,7 +12,8 @@ public class VodInstrumentation extends NetdiskInstrumentation {
   waitJS(web,"Array.from(document.querySelectorAll('.vod-card')).some(x=>x.textContent.indexOf('嫁金钗')>=0)",40000);
   eval(web,"Array.from(document.querySelectorAll('.vod-card')).find(x=>x.textContent.indexOf('嫁金钗')>=0).click();true");
   waitJS(web,"document.querySelectorAll('#vod-routes option').length>0",40000);
-  require("true".equals(eval(web,"(function(){var s=document.getElementById('vod-routes'),o=Array.from(s.options).find(x=>x.textContent.indexOf('超清线路2 ')===0);if(!o)return false;s.value=o.value;s.dispatchEvent(new Event('change'));return true;})()")),"Known direct route missing");
+  // 多源合并下线路名随来源变化：优先超清线路2，否则取任一直连线路（4KVM 公开线路等）
+  require("true".equals(eval(web,"(function(){var s=document.getElementById('vod-routes'),o=Array.from(s.options).find(x=>x.textContent.indexOf('超清线路2 ')===0)||Array.from(s.options).find(x=>x.textContent.indexOf('线路')>=0||x.textContent.indexOf('公开')>=0);if(!o)return false;s.value=o.value;s.dispatchEvent(new Event('change'));return true;})()")),"Known direct route missing");
   ActivityMonitor monitor=addMonitor("com.seagull.tv.VideoActivity",null,false);
   eval(web,"document.querySelector('#vod-episodes button').click();true");Activity player=waitForMonitorWithTimeout(monitor,35000);require(player!=null,"Native VOD player did not open: "+eval(web,"document.getElementById('vod-status').textContent"));
   require(player.getIntent().getBooleanExtra("vodSource",false),"Source referer flag missing");

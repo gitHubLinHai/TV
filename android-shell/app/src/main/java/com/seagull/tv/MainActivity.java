@@ -44,7 +44,7 @@ public class MainActivity extends Activity {
     };
 
     private static final String ORIGIN = "https://app.tv.local/";
-    private static final int SHELL_VERSION = 21;
+    private static final int SHELL_VERSION = 22;
     private final ExecutorService vodPool = Executors.newFixedThreadPool(2);
     private final ExecutorService netdiskPool = Executors.newFixedThreadPool(3);
     private static final AtomicBoolean UPDATING = new AtomicBoolean();

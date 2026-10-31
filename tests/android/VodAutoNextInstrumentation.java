@@ -13,7 +13,7 @@ public class VodAutoNextInstrumentation extends NetdiskInstrumentation {
   waitJS(web,"Array.from(document.querySelectorAll('.vod-card')).some(x=>x.textContent.indexOf('嫁金钗')>=0)",40000);
   eval(web,"Array.from(document.querySelectorAll('.vod-card')).find(x=>x.textContent.indexOf('嫁金钗')>=0).click();true");
   waitJS(web,"document.querySelectorAll('#vod-routes option').length>0",40000);
-  require("true".equals(eval(web,"(function(){var s=document.getElementById('vod-routes'),o=Array.from(s.options).find(x=>x.textContent.indexOf('超清线路2 ')===0);if(!o)return false;s.value=o.value;s.dispatchEvent(new Event('change'));return true;})()")),"Known direct route missing");
+  require("true".equals(eval(web,"(function(){var s=document.getElementById('vod-routes'),o=Array.from(s.options).find(x=>x.textContent.indexOf('超清线路2 ')===0)||Array.from(s.options).find(x=>x.textContent.indexOf('线路')>=0||x.textContent.indexOf('公开')>=0);if(!o)return false;s.value=o.value;s.dispatchEvent(new Event('change'));return true;})()")),"Known direct route missing");
   ActivityMonitor first=addMonitor("com.seagull.tv.VideoActivity",null,false);
   eval(web,"document.querySelector('#vod-episodes button').click();true");
   Activity player=waitForMonitorWithTimeout(first,35000);require(player!=null,"episode 1 player did not open");
