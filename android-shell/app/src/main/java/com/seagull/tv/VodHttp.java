@@ -39,7 +39,7 @@ public final class VodHttp {
         } finally { c.disconnect(); }
     }
     public static boolean allowedPath(String path){
-        return path!=null && path.length()<=2048 && path.matches("/(?:index/home|vod(?:detail|type)/[0-9]+|vodplay/[0-9]+-[0-9]+-[0-9]+|vodshow/[A-Za-z0-9%_-]+|vodsearch/[A-Za-z0-9%_-]+)\\.html");
+        return path!=null && path.length()<=2048 && path.matches("/index/home|/(?:vod(?:detail|type)/[0-9]+|vodplay/[0-9]+-[0-9]+-[0-9]+|vodshow/[A-Za-z0-9%_-]+|vodsearch/[A-Za-z0-9%_-]+)\\.html");
     }
     public static JSONObject fetch(String host,String path)throws Exception{
         if(!allowedHost(host))throw new IOException("片源地址无效");

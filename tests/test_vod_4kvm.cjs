@@ -18,7 +18,7 @@ const assert=require('node:assert/strict');const {chromium}=require('playwright'
    sortedScore:Vod4KVM.applySort('/filter?classify=2&sort_by=hits&order=desc','score'),
    unsorted:Vod4KVM.applySort('/filter?classify=2&sort_by=hits&order=desc',''),
    untouch:Vod4KVM.applySort('/tv','hits'),
-   def:Vod4KVM.defaultPath,search:Vod4KVM.searchPath('嫁金钗'),
+   def:Vod4KVM.defaultPath,latest:Vod4KVM.latestPath,search:Vod4KVM.searchPath('嫁金钗'),
    okPath:(()=>{try{return Vod4KVM.sitePath('/filter?classify=2&page=2');}catch(e){return 'throw:'+e.message;}})(),
    badPath:(()=>{try{return Vod4KVM.sitePath('/filter?evil=1&page=2');}catch(e){return 'throw:'+e.message;}})(),
    badPath2:(()=>{try{return Vod4KVM.sitePath('/page/sahewngji');}catch(e){return 'throw:'+e.message;}})()
@@ -43,6 +43,7 @@ const assert=require('node:assert/strict');const {chromium}=require('playwright'
  // 详情/搜索不变
  assert.equal(out.detail.routes.length,1);assert.equal(out.detail.routes[0].episodes.length,2);assert.equal(out.detail.routes[0].episodes[0].resolve4kvm,true);
  assert.equal(out.search,'/search?q=%E5%AB%81%E9%87%91%E9%92%97');
+ assert.equal(out.latest,'/filter?sort_by=update_time&order=desc');
  // 封面：解包百度图片代理（代理对轮换图床只回 1x1 空白 GIF），普通 https 地址原样保留
  assert.equal((await p.evaluate(()=>Vod4KVM.resource('https://gimg0.baidu.com/gimg/app=2001&n=0&g=0n&fmt=jpeg&src=4kvm.staticimgjs.org/uploads/a.jpg'))),'https://4kvm.staticimgjs.org/uploads/a.jpg');
  assert.equal((await p.evaluate(()=>Vod4KVM.resource('https://gimg0.baidu.com/gimg/app=2001&fmt=jpeg'))),'');

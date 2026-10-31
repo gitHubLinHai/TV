@@ -104,6 +104,7 @@
       }catch(e){return target;}
     },
     defaultPath:'/filter?sort_by=update_time&order=desc',
+    latestPath:'/filter?sort_by=update_time&order=desc',
     searchPath:function(query){return '/search?q='+encodeURIComponent(query);},
     resource:resource
   };

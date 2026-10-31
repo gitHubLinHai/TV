@@ -4,7 +4,7 @@
   // 站点解析知识已模块化到 vod-sources.js（片源适配器注册表）。
   var serial=0,epoch=0,pending={},siteNextRefs=[],path='',allItems=[],detail=null,scroll=0,playing=false,currentEpisode=null,currentCat=0,viewIndex=0,totalSitePages=0,sitePageItems=0,loadingMore=false,seenTitles=Object.create(null),sort='',lastPlan=null,apiClassesCache={},noCat=[];var PAGE=10;
   var KIND_KEYWORDS={'电视剧':['电视剧','连续剧','国产剧','剧'],'电影':['电影'],'短剧':['短剧'],'动漫':['动漫','动画'],'综艺纪录':['综艺','纪录','娱乐']};
-  var categories=[['电视剧','/vodshow/2-----------.html'],['电影','/vodshow/1-----------.html'],['短剧','/vodshow/125-----------.html'],['动漫','/vodshow/4-----------.html'],['综艺纪录','/vodshow/3-----------.html']];
+  var categories=[['最近更新','__latest__'],['电视剧','/vodshow/2-----------.html'],['电影','/vodshow/1-----------.html'],['短剧','/vodshow/125-----------.html'],['动漫','/vodshow/4-----------.html'],['综艺纪录','/vodshow/3-----------.html']];
   var SORTS=[['综合',''],['最热播','hits'],['高分','score']];
   function sourceFor(value){
     if(value&&typeof value==='object')return value;
@@ -102,6 +102,17 @@
       var keys=Object.keys(docCache);if(keys.length>40)delete docCache[keys[0]];
       docCache[key]={data:data,at:Date.now()};return data;});
   }
+  // 类型 → 样式类映射（不同类型不同样式的徽标与卡片描边）
+  var KIND_CLASS={'电视剧':'tv','电影':'film','短剧':'drama','动漫':'anime','综艺纪录':'variety'};
+  var KIND_ALIAS={'连续剧':'tv','国产剧':'tv','美剧':'tv','韩剧':'tv','动画':'anime','综艺':'variety','纪录':'variety','纪录片':'variety'};
+  function kindOf(note){
+    var n=String(note||'');
+    if(!n)return '';
+    if(/第\s*\d+\s*集|更新至|连载|全集|完结/.test(n))return '电视剧';
+    if(/期\s*$|^\d{6,8}$/.test(n))return '综艺纪录';
+    if(/HD|高清|正片|TC|枪版|蓝光|国语|粤语|中字/i.test(n))return '电影';
+    return '';
+  }
   function button(label,fn,cls){var b=document.createElement('button');b.type='button';b.textContent=label;if(cls)b.className=cls;b.addEventListener('click',fn);return b;}
   function status(value){$('vod-status').textContent=value;}
   function showList(){detail=null;$('vod-list-view').hidden=false;$('vod-detail-view').hidden=true;$('vod-title').textContent='影视片库';}
@@ -109,14 +120,16 @@
     var box=$('vod-list');box.textContent='';
     var frag=document.createDocumentFragment();
     allItems.slice(viewIndex*PAGE,viewIndex*PAGE+PAGE).forEach(function(item){
-      var card=button('',function(){openDetail(item);},'vod-card');var cover=document.createElement('div');cover.className='vod-cover';cover.textContent='暂无封面';
+      var kind=item.kind||kindOf(item.note);
+      var card=button('',function(){openDetail(item);},'vod-card'+(kind?' kind-'+KIND_CLASS[kind]:''));var cover=document.createElement('div');cover.className='vod-cover';cover.textContent='暂无封面';
       if(item.cover){cover.textContent='';var img=document.createElement('img');img.src=item.cover;img.alt='';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';img.addEventListener('error',function(){
         // 百度图片代理不稳定：失败一次后换上游直链重试，再失败才显示占位。
         if(!img.dataset.retried){img.dataset.retried='1';
           try{var u=new URL(img.src);if(/(^|\.)gimg\d*\.baidu\.com$/.test(u.hostname)){var d=u.searchParams.get('src');if(d){img.src='https://'+d;return;}}}catch(e){}
         }
         cover.textContent='封面暂不可用';
-      });cover.appendChild(img);}card.appendChild(cover);
+      });cover.appendChild(img);}
+      if(kind){var badge=document.createElement('span');badge.className='type-badge badge-'+(KIND_CLASS[kind]||'misc');badge.textContent=kind;cover.appendChild(badge);}card.appendChild(cover);
       var title=document.createElement('strong');title.textContent=item.title;card.appendChild(title);var note=document.createElement('small');note.textContent=(item.src&&sources.length>1?item.src+' · ':'')+(item.note||'点击查看线路与选集');card.appendChild(note);frag.appendChild(card);
     });
     box.appendChild(frag);
@@ -165,7 +178,8 @@
     var catName=plan&&plan.cat;
     var pageTargets=pages.map(function(s){
       var adapter=VodSources.resolve(s),targetPath=null;
-      if(catName)targetPath=adapter.categoryPath?adapter.categoryPath(catName):VodSources.categoryPath(s,catName,categories);
+      if(catName==='最近更新')targetPath=adapter.latestPath||adapter.defaultPath||null;
+      else if(catName)targetPath=adapter.categoryPath?adapter.categoryPath(catName):VodSources.categoryPath(s,catName,categories);
       else if(plan&&plan.q&&adapter.searchPath)targetPath=adapter.searchPath(plan.q);
       else{try{targetPath=adapter.sitePath(target);}catch(e){}if(!targetPath&&adapter.defaultPath)targetPath=adapter.defaultPath;}
       if(targetPath&&adapter.applySort)targetPath=adapter.applySort(targetPath,sort);
@@ -175,10 +189,13 @@
     pages=pageTargets.filter(function(pt){return !!pt.path;}).map(function(pt){return pt.s;});
     var catTargets=pageTargets;
     var cached=!bypass&&!apis.length&&catTargets.every(function(pt){var k=pt.s.host+pt.path,hit=docCache[k];return hit&&Date.now()-hit.at<DOC_TTL;});
-    if(cached){applyResults(catTargets.filter(function(pt){return !!pt.path;}).map(function(pt){return packSource(pt.s,parsePageList(pt.s,docCache[pt.s.host+pt.path].data.html,pt.path));}),true);return Promise.resolve();}
+    if(cached){applyResults(catTargets.filter(function(pt){return !!pt.path;}).map(function(pt){var pk=packSource(pt.s,parsePageList(pt.s,docCache[pt.s.host+pt.path].data.html,pt.path));
+      if(catName&&catName!=='最近更新')pk.items.forEach(function(x){if(!x.kind)x.kind=catName;});return pk;}),true);return Promise.resolve();}
     status('正在读取影视片单…（'+enabled.length+'个片源）');
     var pageJobs=catTargets.filter(function(pt){return !!pt.path;}).map(function(pt){
-      return fetchDoc(pt.path,pt.s.host,bypass).then(function(reply){return packSource(pt.s,parsePageList(pt.s,reply.html,pt.path));})
+      return fetchDoc(pt.path,pt.s.host,bypass).then(function(reply){var pk=packSource(pt.s,parsePageList(pt.s,reply.html,pt.path));
+        if(catName&&catName!=='最近更新')pk.items.forEach(function(x){if(!x.kind)x.kind=catName;});
+        return pk;})
         .catch(function(e){return {host:pt.s.host,name:pt.s.name,error:e.message||'连接失败'};});
     });
     var apiJobs=apis.map(function(s){
@@ -290,7 +307,7 @@
   function applySort(target){if(!sort)return target;var m=target.match(/^\/vodshow\/(\d+)-{11}\.html$/);return m?'/vodshow/'+m[1]+'--'+sort+'---------.html':target;}
   function markSorts(){Array.prototype.forEach.call($('vod-sorts').children,function(b,i){b.classList.toggle('selected',SORTS[i][1]===sort);});}
   function renderSorts(){var box=$('vod-sorts');box.textContent='';SORTS.forEach(function(s){var b=button(s[0],function(){sort=s[1];markSorts();if(/^\/vodshow\/\d+-{11}\.html$/.test(path))loadList(applySort(path),false,null,true);else status('当前列表不涉及排序；选择分类后按“'+s[0]+'”加载');},sort===s[1]?'selected':'');box.appendChild(b);});}
-  function openVod(){if(!$('vod-dialog').open)$('vod-dialog').show();currentCat=0;markChip();window.__vodTab='vod-open';loadList(applySort(categories[0][1]),false,{cat:categories[0][0]});}
+  function openVod(){if(!$('vod-dialog').open)$('vod-dialog').show();currentCat=1;markChip();window.__vodTab='vod-open';loadList(applySort(categories[1][1]),false,{cat:categories[1][0]});}
   $('vod-open').addEventListener('click',openVod);
   renderChips();renderSorts();
   // ===== 片源管理 UI =====

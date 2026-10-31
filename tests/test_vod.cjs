@@ -10,7 +10,16 @@ const assert=require('node:assert/strict');const {chromium}=require('playwright'
     const list3=mk(819800,'测试剧C')+'<a href="/vodshow/2--------3---.html">3</a>';
     let html=path.includes('/voddetail/')?detail:path.includes('/vodplay/')?'<script>var player_aaaa='+JSON.stringify({encrypt:0,url:path.includes('-14-')?'https://media.example.org/video.m3u8':'https://parser.example.org/?id=1'})+'</script>':path.includes('2--------3---')?list3:path.includes('2--------2---')?list2:list1;
     setTimeout(()=>__vodReply(id,{ok:true,data:{path,html}}),delayVod);},playVodVideo:(url,title,key,host)=>calls.push({action:'play',url,title,key})};});
- await p.goto('http://127.0.0.1:8138/');await p.locator('#vod-open').click();await p.locator('.vod-card').first().waitFor();assert.equal(await p.locator('.vod-card').count(),10);assert.equal(await p.evaluate(()=>window.SOURCE_SCRIPT_EXECUTED),undefined);assert.equal(await p.locator('.vod-card img').first().getAttribute('referrerpolicy'),'no-referrer');
+ await p.goto('http://127.0.0.1:8138/');await p.locator('#vod-open').click();await p.locator('.vod-card').first().waitFor();assert.equal(await p.locator('.vod-card').count(),10);
+ // 类型徽标：分类加载时按分类名标注（电视剧→蓝色徽标与描边）
+ assert.equal(await p.evaluate(()=>document.querySelectorAll('.type-badge.badge-tv').length),10,'category items get tv badges');
+ // 最近更新芯片：拉取 555 首页混合流（/index/home），按备注启发式识别类型
+ await p.evaluate(()=>{document.querySelectorAll('#vod-categories button')[0].click();});
+ await p.waitForFunction(()=>window.calls.some(c=>c.path==='/index/home'),{timeout:10000});
+ await p.waitForFunction(()=>document.querySelectorAll('.vod-card').length>0,{timeout:15000});
+ assert.equal(await p.evaluate(()=>document.querySelector('#vod-categories button').textContent),'最近更新');
+ await p.evaluate(()=>{document.querySelectorAll('#vod-categories button')[1].click();});
+ await p.waitForFunction(()=>document.querySelectorAll('.type-badge.badge-tv').length>0,{timeout:15000});assert.equal(await p.evaluate(()=>window.SOURCE_SCRIPT_EXECUTED),undefined);assert.equal(await p.locator('.vod-card img').first().getAttribute('referrerpolicy'),'no-referrer');
  assert.equal(await p.locator('.vod-card').count(),10,'page size is 10');
  await p.locator('#vod-next').click();await p.waitForFunction(()=>document.getElementById('vod-page').textContent.includes('第 2 /'),{timeout:15000});assert.equal(await p.locator('.vod-card').count(),10,'page 2 full after auto-fetch');assert(await p.evaluate(()=>calls.filter(c=>c.action==='fetch').length>=2),'page 2 fetched');
  await p.locator('#vod-next').click();await p.waitForFunction(()=>document.getElementById('vod-page').textContent.includes('第 3 /'),{timeout:15000});assert.equal(await p.locator('.vod-card').count(),10,'page 3 full after auto-fetch');assert(await p.evaluate(()=>calls.filter(c=>c.action==='fetch').length>=3),'page 3 fetched');

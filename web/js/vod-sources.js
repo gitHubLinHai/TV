@@ -32,12 +32,16 @@
 
   function sitePath(value){
       var u=new URL(value,SITE);
-      if(u.origin!==SITE||u.search||u.hash||!/^\/(?:index\/home|vod(?:detail|type)\/\d+|vodplay\/\d+-\d+-\d+|vodshow\/[\w%\-]+|vodsearch\/[\w%\-]+)\.html$/.test(u.pathname))throw new Error('来源页面地址不受支持');
-      return u.pathname;
-    };
+      if(u.origin!==SITE||u.hash)throw new Error('来源页面地址不受支持');
+      if(u.pathname==='/index/home'&&!u.search)return u.pathname;
+      if(!u.search&&/^\/(?:vod(?:detail|type)\/\d+|vodplay\/\d+-\d+-\d+|vodshow\/[\w%\-]+|vodsearch\/[\w%\-]+)\.html$/.test(u.pathname))return u.pathname;
+      throw new Error('来源页面地址不受支持');
+    }
   var maccmsPage={
     id:'maccms-page',
     defaultHost:'www.555yy1.com',
+    // 最近更新混合流：首页按更新时间聚合全部类型
+    latestPath:'/index/home',
     sitePath:sitePath,
     applySort:function(target,sort){
       if(!sort)return target;

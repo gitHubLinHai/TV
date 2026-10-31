@@ -86,7 +86,7 @@ def fetch_vod(path,host='www.555yy1.com'):
  if host=='www.4kvm.net':
   if not isinstance(path,str)or len(path)>512 or not re.fullmatch(r'/(?:movie|tv|anime)?(?:\?page=\d{1,4})?|/filter(?:\?[a-z_]{1,12}=[A-Za-z0-9%._~-]{1,32}(?:&[a-z_]{1,12}=[A-Za-z0-9%._~-]{1,32})*)?|/search\?q=[A-Za-z0-9%._~-]{1,240}(?:&page=\d{1,4})?|/play/[a-z0-9]{6,24}',path):raise ValueError('不支持的 4KVM 页面地址')
   if path.startswith('/filter?') and any(kv.split('=')[0] not in {'classify','types','areas','years','tags','sort_by','order','page'} for kv in path.split('?',1)[1].split('&')):raise ValueError('不支持的 4KVM 页面地址')
- elif not isinstance(path,str)or len(path)>2048 or not re.fullmatch(r'/(?:index/home|vod(?:detail|type)/[0-9]+|vodplay/[0-9]+-[0-9]+-[0-9]+|vodshow/[A-Za-z0-9%_-]+|vodsearch/[A-Za-z0-9%_-]+)\.html',path):raise ValueError('不支持的影视页面地址')
+ elif not isinstance(path,str)or len(path)>2048 or not re.fullmatch(r'/index/home|/(?:vod(?:detail|type)/[0-9]+|vodplay/[0-9]+-[0-9]+-[0-9]+|vodshow/[A-Za-z0-9%_-]+|vodsearch/[A-Za-z0-9%_-]+)\.html',path):raise ValueError('不支持的影视页面地址')
  # 用户配置的公开片源站，无 Cookie；预览同样只返回文本，不执行站点脚本。
  with urlopen(Request('https://'+host+path,headers={'User-Agent':UA,'Referer':'https://'+host+'/'}),timeout=20)as response:
   target=urlparse(response.url)
