@@ -44,7 +44,7 @@ public class MainActivity extends Activity {
     };
 
     private static final String ORIGIN = "https://app.tv.local/";
-    private static final int SHELL_VERSION = 18;
+    private static final int SHELL_VERSION = 19;
     private final ExecutorService vodPool = Executors.newFixedThreadPool(2);
     private final ExecutorService netdiskPool = Executors.newFixedThreadPool(3);
     private static final AtomicBoolean UPDATING = new AtomicBoolean();
@@ -436,22 +436,25 @@ public class MainActivity extends Activity {
                         int next = remote.optInt("versionCode", 0);
                         recentUpdate = remote; recentAt = android.os.SystemClock.elapsedRealtime();
                         JSONObject o = new JSONObject();
-                        // 新版本要求更高的原生壳：热更装不下，明确提示覆盖安装 APK，而不是下载后报“版本不一致”。
-                        if (next > activeCode() && remote.optInt("minShellVersion", 1) > SHELL_VERSION) {
+                        boolean wgtApplicable = next > activeCode() && remote.optInt("minShellVersion", 1) <= SHELL_VERSION;
+                        boolean apkNewer = remote.optInt("apkCode", 0) > packageVersionCode() && remote.optLong("apkSize", 0) > 0;
+                        // 网页层可热更：优先走 WGT；装不下/已同步时若远端 APK 更新，则提供应用内下载安装。
+                        if (wgtApplicable) {
+                            o.put("state", "found");
+                        } else if (apkNewer) {
+                            o.put("state", "foundapk");
+                        } else if (next > activeCode() && remote.optInt("minShellVersion", 1) > SHELL_VERSION) {
+                            // 新版本要求更高的原生壳且远端未提供 APK：明确提示覆盖安装。
                             o.put("state", "needapk");
                             o.put("version", remote.optString("versionName"));
-                            o.put("notes", "该版本包含新的原生功能，应用内热更装不下；请覆盖安装最新 APK，安装后热更自动恢复。");
+                            o.put("notes", "该版本包含新的原生功能，应用内热更装不下；请到发布页下载最新 APK 覆盖安装。");
                             jsCallback(cb, o);
                             return;
-                        }
-                        if (next < activeCode()) {
+                        } else if (next < activeCode()) {
                             cbError(cb, "更新源版本落后于当前 v" + activeName() + "，暂时无法确认更新，请稍后重试");
                             return;
-                        }
-                        if (next == activeCode()) {
-                            o.put("state", "uptodate");
                         } else {
-                            o.put("state", "found");
+                            o.put("state", "uptodate");
                         }
                         o.put("version", next == activeCode() ? activeName() : remote.optString("versionName"));
                         o.put("notes", remote.optString("notes"));
@@ -464,8 +467,67 @@ public class MainActivity extends Activity {
         }
 
         /** 异步执行更新：下载 wgt → 解压 → 替换 www */
-        @JavascriptInterface
-        public void applyUpdate(final String cb) { update(cb, false); }
+        /** 异步执行更新：下载 wgt → 解压 → 替换 www */
+        @JavascriptInterface public void applyUpdate(final String cb) { update(cb, false); }
+
+        private int packageVersionCode() {
+            try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionCode; }
+            catch (Exception e) { return 0; }
+        }
+
+        /** 异步下载新版 APK（断点续传 + SHA-256 校验）并拉起系统安装确认。 */
+        @JavascriptInterface public void applyApkUpdate(final String cb) {
+            if (!UPDATING.compareAndSet(false, true)) { cbError(cb, "正在更新，请稍后重试"); return; }
+            new Thread(new Runnable() { public void run() {
+                File archive = new File(getFilesDir(), "update.apk");
+                try {
+                    JSONObject remote = recentUpdate;
+                    if (remote == null || android.os.SystemClock.elapsedRealtime() - recentAt >= 60000)
+                        remote = fetchVersionJson(null);
+                    if (remote == null) { cbError(cb, "网络不通，稍后再试"); return; }
+                    recentUpdate = remote; recentAt = android.os.SystemClock.elapsedRealtime();
+                    final String apkName = remote.optString("apk", "");
+                    long size = remote.optLong("apkSize", 0);
+                    String hash = remote.optString("apkSha256", "");
+                    if (!apkName.matches("[A-Za-z0-9._-]+\\.apk") || size <= 0 || size > 64L * 1024 * 1024 || !hash.matches("[a-fA-F0-9]{64}"))
+                        throw new Exception("更新信息缺少有效的 APK 下载项");
+                    if (remote.optInt("apkCode", 0) <= packageVersionCode()) { cbError(cb, "当前 APK 已是最新"); return; }
+                    List<String> bases = new ArrayList<>();
+                    bases.add(remote.optString("_base", CDNS[0]));
+                    for (String base : CDNS) if (!bases.contains(base)) bases.add(base);
+                    Exception failure = null;
+                    boolean downloaded = false;
+                    for (String base : bases) {
+                        try {
+                            final String url = base + apkName;
+                            UpdateDownload.fetch(new URL(url), archive, size, hash,
+                                    u -> {
+                                        HttpURLConnection c = (HttpURLConnection) u.openConnection();
+                                        c.setConnectTimeout(8000); c.setReadTimeout(15000);
+                                        c.setRequestProperty("User-Agent", NetdiskHttp.UA);
+                                        c.setRequestProperty("Accept-Encoding", "identity");
+                                        return c;
+                                    },
+                                    () -> { },
+                                    (done, total) -> jsCallback(cb, new JSONObject().put("state", "downloadingapk").put("progress", total == 0 ? 0 : (double) done / total)));
+                            downloaded = true; break;
+                        } catch (Exception e) { failure = e; }
+                    }
+                    if (!downloaded) throw failure != null ? failure : new java.io.IOException("所有更新源均不可用");
+                    if (!hash.equalsIgnoreCase(UpdateDownload.sha256(archive))) throw new Exception("APK 校验不符，请重试");
+                    jsCallback(cb, new JSONObject().put("state", "installready").put("version", remote.optString("versionName")));
+                    android.net.Uri uri = androidx.core.content.FileProvider.getUriForFile(MainActivity.this, "com.seagull.tv.apk", archive);
+                    android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+                    intent.setDataAndType(uri, "application/vnd.android.package-archive");
+                    intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION | android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                } catch (Exception ex) {
+                    String msg = ex.getMessage() == null ? String.valueOf(ex) : ex.getMessage();
+                    if (msg.contains("INSTALL")) msg = "请在系统设置中允许本应用“安装未知应用”后重试";
+                    cbError(cb, msg);
+                } finally { UPDATING.set(false); }
+            }}).start();
+        }
 
         private void update(final String cb, final boolean wifiOnly) {
             if (!UPDATING.compareAndSet(false, true)) {

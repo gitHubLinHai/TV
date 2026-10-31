@@ -139,3 +139,12 @@
 2. 类型徽标与卡片描边（不同类型不同样式）：电视剧蓝 / 电影金 / 短剧粉 / 动漫绿 / 综艺紫 / 其他灰。分类加载时按分类名直接标注；"最近更新"混合流按备注启发式识别（第X集/更新至/连载/完结→电视剧；期/纯日期→综艺；HD/高清/正片/TC/蓝光/中字→电影；其余不标）。徽标叠加在封面左上角，卡片顶部同色描边、备注文字同色。
 3. 测试：test_vod 增加类型徽标断言（分类加载 10 张电视剧徽标、最近更新芯片拉取 /index/home）；test_vod_4kvm 增加 latestPath 断言；全量网页回归通过；Android 影视/短剧插桩通过（短剧芯片按文本定位不受插入芯片影响）。
 4. 排查记录：555 首页（177KB）为"追剧周表（按周几）+专栏"结构，无逐卡片类型标记，故混合流采用备注启发式；sitePath 曾因重写丢失"禁止查询串"约束被严格路径测试逮住，已恢复；徽标最初插在封面清空之前被覆盖，已移到封面处理之后。
+
+补充（同日第十六轮）：APK 应用内自更新（v1.0.34 / 壳 19）
+1. 用户问"旧 APK 能否自动下载新 APK 覆盖安装"。可行但 Android 规则决定不能完全静默：应用内下载 → 自动拉起系统安装窗口 → 用户点一次"安装"；首次还需在系统设置给应用开"允许安装未知应用"。已实现完整链路：
+   - version.json 新增 apk 字段（文件名/apkCode/apkSize/apkSha256，make_wgt.py --apk-info 在 APK 构建后注入）；
+   - 更新检查优先级：WGT 可热更 → WGT；否则若远端 apkCode > 已装包版本 → "foundapk"（更新面板显示"发现新版 APK x.y.z"，点按钮下载）；WGT 装不下且无 APK 时才提示 needapk；
+   - applyApkUpdate 桥：多 CDN 断点续传下载（复用 UpdateDownload，进度回调 downloadingapk）→ SHA-256 校验 → FileProvider 拉起 ACTION_VIEW 系统安装；被拒时引导去开"安装未知应用"。
+   - Manifest 新增 REQUEST_INSTALL_PACKAGES 权限与 androidx.core FileProvider（com.seagull.tv.apk，files-path update.apk）。
+2. 发布流程更新：make_wgt（自增+出 WGT）→ build_apk（出 APK）→ make_wgt --apk-info（注入 APK 信息到 version.json）→ 三件套发布到仓库 release/。
+3. 回归：test_ui 新增 foundapk/downloadingapk/installready 状态断言；test_native_update.py 全过（多源选择/断点/损坏包/Wi-Fi/回滚）；test_ui/vod/sources/4kvm 网页回归通过；真机影视插桩通过。

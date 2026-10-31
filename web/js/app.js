@@ -77,9 +77,14 @@
     quietCheck = silent === true;
     busy = true; pending = false; window.__updateStatus({ state: 'checking' }); bridge.startCheck('unused');
   }
+  var apkPending = false;
   function apply(wifiOnly) {
     if (busy || !pending) return;
     busy = true; pending = false;
+    if (apkPending) {
+      window.__updateStatus({ state: 'downloadingapk', progress: 0 });
+      bridge.applyApkUpdate('unused'); return;
+    }
     window.__updateStatus({ state: 'downloading', progress: 0 });
     if (wifiOnly) bridge.applyWifiUpdate('unused'); else bridge.applyUpdate('unused');
   }
@@ -89,8 +94,21 @@
     if (s.state === 'checking') { $('update-title').textContent = '正在检查更新'; $('update-detail').textContent = '并行检查版本，保留本地使用记录。'; }
     else if (s.state === 'found') {
       quietCheck = false;
-      busy = false; pending = true; $('update-title').textContent = '发现新版本 ' + s.version; $('update-detail').textContent = s.notes || '资源更新';
+      busy = false; pending = true; apkPending = false; $('update-title').textContent = '发现新版本 ' + s.version; $('update-detail').textContent = s.notes || '资源更新';
       if (bridge.networkType() === 'wifi') apply(true); else { $('update-detail').textContent += ' · 等待 Wi-Fi，或手动下载。'; $('update-apply').hidden = false; }
+    } else if (s.state === 'foundapk') {
+      quietCheck = false;
+      busy = false; pending = true; apkPending = true; $('update-title').textContent = '发现新版 APK ' + s.version;
+      $('update-detail').textContent = (s.notes || '包含新的原生功能') + ' · 下载后需在系统弹窗点“安装”。';
+      $('update-apply').hidden = false; $('update-apply').textContent = '下载并安装';
+    } else if (s.state === 'downloadingapk') {
+      busy = true; var pk = Math.max(0, Math.min(1, Number(s.progress) || 0));
+      $('update-title').textContent = '正在下载新 APK ' + Math.floor(pk * 100) + '%'; $('update-detail').textContent = '中断会保留进度，下次继续。'; $('update-progress').value = pk;
+    } else if (s.state === 'installready') {
+      busy = false; pending = false; apkPending = false; $('update-title').textContent = '新 APK 已就绪';
+      $('update-detail').textContent = '已拉起系统安装窗口，请点“安装”完成覆盖。若被拒绝，请先在系统设置中允许本应用安装。';
+      $('update-apply').hidden = false; $('update-apply').textContent = '再次拉起安装';
+      setTimeout(function () { $('update-apply').textContent = '手动下载'; }, 5000);
     } else if (s.state === 'downloading') {
       busy = true; var p = Math.max(0, Math.min(1, Number(s.progress) || 0));
       $('update-title').textContent = '正在更新 ' + Math.floor(p * 100) + '%'; $('update-detail').textContent = '中断会保留进度，下次继续。'; $('update-progress').value = p;

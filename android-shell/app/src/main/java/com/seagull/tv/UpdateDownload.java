@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.io.FileInputStream;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -17,6 +18,17 @@ public final class UpdateDownload {
     public interface Connection { HttpURLConnection open(URL url) throws Exception; }
     public interface Progress { void update(long done, long total) throws Exception; }
     public interface Check { void run() throws IOException; }
+
+    public static String sha256(File file) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        try (InputStream input = new FileInputStream(file)) {
+            byte[] buffer = new byte[16384]; int n;
+            while ((n = input.read(buffer)) != -1) digest.update(buffer, 0, n);
+        }
+        StringBuilder hex = new StringBuilder();
+        for (byte b : digest.digest()) hex.append(String.format("%02x", b));
+        return hex.toString();
+    }
 
     public static void discard(File archive) throws IOException {
         for (File f : new File[]{archive, new File(archive.getPath() + ".id")})

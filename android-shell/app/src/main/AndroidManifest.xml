@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.seagull.tv" android:versionCode="133" android:versionName="1.0.33">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.seagull.tv" android:versionCode="134" android:versionName="1.0.34">
  <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="34"/>
  <uses-permission android:name="android.permission.INTERNET"/>
  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
  <uses-permission android:name="android.permission.WAKE_LOCK"/>
+ <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIAPLAYBACK"/>
  <application android:label="搜看" android:icon="@drawable/icon" android:allowBackup="false" android:theme="@style/AppTheme" android:networkSecurityConfig="@xml/network_security">
   <activity android:name=".VideoActivity" android:exported="false" android:configChanges="orientation|screenSize|keyboardHidden"/>
   <service android:name=".MusicKeepService" android:exported="false" android:foregroundServiceType="mediaPlayback"/>
+ <provider android:name="androidx.core.content.FileProvider" android:authorities="com.seagull.tv.apk" android:exported="false" android:grantUriPermissions="true">
+  <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/apk_paths"/>
+ </provider>
   <activity android:name=".Vod4kvmResolveActivity" android:process=":vodresolver" android:exported="false" android:excludeFromRecents="true" android:noHistory="true" android:theme="@style/VodResolverTheme"/>
   <activity android:name=".PrivateBrowserActivity" android:process=":private" android:exported="false" android:excludeFromRecents="true" android:configChanges="orientation|screenSize|keyboardHidden"/>
   <activity android:name=".BrowserActivity" android:exported="false" android:configChanges="orientation|screenSize|keyboardHidden"/>
