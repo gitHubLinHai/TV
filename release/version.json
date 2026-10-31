@@ -1,10 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 133,
-  "versionName": "1.0.33",
+  "versionCode": 134,
+  "versionName": "1.0.34",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.33.wgt",
-  "wgtSize": 59727,
-  "wgtSha256": "ede82c6bbc0de3b85611904a11a94bc2997d2ad5c51cf775b38519282a831f63",
-  "notes": "影视页新增最近更新专区（首页混合流），卡片按类型显示不同样式徽标与描边"
+  "wgt": "TV-v1.0.34.wgt",
+  "wgtSize": 60002,
+  "wgtSha256": "df2be5beb303b2a5e64a0b1f85c9467d3e9a0f4f3682b2edadf05f619e9148aa",
+  "notes": "新增 APK 应用内自更新：发现新版 APK 可下载并拉起系统安装",
+  "apk": "TV-v1.0.34.apk",
+  "apkCode": 134,
+  "apkSize": 3465906,
+  "apkSha256": "c04c381c47550871ccc2e9dd13949e3ff70d404a8d502f94925eaf62e9a39088"
 }
