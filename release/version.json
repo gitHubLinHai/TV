@@ -1,14 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 135,
-  "versionName": "1.0.35",
+  "versionCode": 136,
+  "versionName": "1.0.36",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.35.wgt",
-  "wgtSize": 60085,
-  "wgtSha256": "698312d9dbe24b042f2ad6c5b64fdd124aff3d9aba3a186b0f9909741c8c26fe",
-  "notes": "影视页布局调整：工具与搜索紧贴分类芯片（最近更新在搜索下方），片源管理与自定义路径折叠到列表下方",
-  "apk": "TV-v1.0.35.apk",
-  "apkCode": 135,
+  "wgt": "TV-v1.0.36.wgt",
+  "wgtSize": 60134,
+  "wgtSha256": "f744d8dbc02631f3ba0f208d64060e07934aa756c4aa084a273faf774649cb61",
+  "notes": "修复从优惠页切换页签无效（优惠页未关闭）；新增崩溃记录提示",
+  "apk": "TV-v1.0.36.apk",
+  "apkCode": 136,
   "apkSize": 3465906,
-  "apkSha256": "37c2ef2f03f915eeee26ef2c4d73a998eb8e0121c4210ec0388f76fc7a6a6056"
+  "apkSha256": "73d7a6ae4ad057ddfda05a9ecadc8035504b75378dfb3a45b28b01dab2df7a20"
 }
