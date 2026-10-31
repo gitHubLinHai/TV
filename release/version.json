@@ -1,10 +1,10 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 131,
-  "versionName": "1.0.31",
+  "versionCode": 132,
+  "versionName": "1.0.32",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.31.wgt",
-  "wgtSize": 58944,
-  "wgtSha256": "7f0c2858e7cccf5099f00d4ce985b1a3862faa76c021a35bf1152466b607d9fd",
-  "notes": "热更链路打通发布；壳版本过低时明确提示需安装新版 APK"
+  "wgt": "TV-v1.0.32.wgt",
+  "wgtSize": 58768,
+  "wgtSha256": "a095da670b0b35531389232f3cdd628a30691e8ec0838a1fecbf10b31dc14676",
+  "notes": "移除重复的短剧页签：短剧入口保留在影视页分类芯片中"
 }
