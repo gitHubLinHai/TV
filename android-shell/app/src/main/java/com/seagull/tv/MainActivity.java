@@ -44,7 +44,7 @@ public class MainActivity extends Activity {
     };
 
     private static final String ORIGIN = "https://app.tv.local/";
-    private static final int SHELL_VERSION = 19;
+    private static final int SHELL_VERSION = 20;
     private final ExecutorService vodPool = Executors.newFixedThreadPool(2);
     private final ExecutorService netdiskPool = Executors.newFixedThreadPool(3);
     private static final AtomicBoolean UPDATING = new AtomicBoolean();
@@ -58,6 +58,20 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // 崩溃捕获：堆栈写入 last_crash.txt（下次启动在更新面板提示，90 秒后清除），随后交回系统崩溃流程。
+        final Thread.UncaughtExceptionHandler previous = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            try {
+                java.io.StringWriter stack = new java.io.StringWriter();
+                e.printStackTrace(new java.io.PrintWriter(stack));
+                String text = "v" + activeName() + " 壳" + SHELL_VERSION + " " + android.text.format.DateFormat.format("MM-dd HH:mm", System.currentTimeMillis()) + "\n" + stack;
+                if (text.length() > 8000) text = text.substring(0, 8000);
+                try (java.io.FileWriter writer = new java.io.FileWriter(new File(getFilesDir(), "last_crash.txt"), false)) {
+                    writer.write(text);
+                }
+            } catch (Exception ignored) { }
+            if (previous != null) previous.uncaughtException(t, e);
+        });
         PrivacyState.init(this);
         if (PrivacyState.enabled) getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
         WebView.setWebContentsDebuggingEnabled((getApplicationInfo().flags & 2) != 0);
@@ -127,6 +141,7 @@ public class MainActivity extends Activity {
         web.addJavascriptInterface(new Bridge(), "TVBridge");
         setContentView(web);
         loadHome();
+        homeHandler.postDelayed(() -> { try { new File(getFilesDir(), "last_crash.txt").delete(); } catch (Exception ignored) { } }, 90_000);
     }
 
     private void loadHome() {
@@ -415,6 +430,14 @@ public class MainActivity extends Activity {
                 JSONObject o = new JSONObject();
                 o.put("code", activeCode());
                 o.put("name", activeName());
+                File crash = new File(getFilesDir(), "last_crash.txt");
+                if (crash.isFile()) {
+                    try (InputStream input = new FileInputStream(crash)) {
+                        byte[] bytes = new byte[240];
+                        int n = input.read(bytes);
+                        if (n > 0) o.put("crash", new String(bytes, 0, n, java.nio.charset.StandardCharsets.UTF_8).split("\n")[0].trim());
+                    }
+                }
                 return o.toString();
             } catch (Exception e) {
                 return "{}";
@@ -455,6 +478,14 @@ public class MainActivity extends Activity {
                             return;
                         } else {
                             o.put("state", "uptodate");
+                            File crashFile = new File(getFilesDir(), "last_crash.txt");
+                            if (crashFile.isFile()) {
+                                try (InputStream input = new FileInputStream(crashFile)) {
+                                    byte[] bytes = new byte[240];
+                                    int n = input.read(bytes);
+                                    if (n > 0) o.put("crash", new String(bytes, 0, n, java.nio.charset.StandardCharsets.UTF_8).split("\n")[0].trim());
+                                }
+                            }
                         }
                         o.put("version", next == activeCode() ? activeName() : remote.optString("versionName"));
                         o.put("notes", remote.optString("notes"));

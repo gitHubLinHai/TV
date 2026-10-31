@@ -117,7 +117,8 @@
     } else if (s.state === 'waitingwifi') {
       busy = false; pending = true; retryAt = Date.now() + 10000; $('update-title').textContent = '等待 Wi-Fi'; $('update-detail').textContent = '下载进度已保留，连接后继续。'; $('update-apply').hidden = false;
     } else if (s.state === 'uptodate') {
-      busy = false; pending = false; $('update-title').textContent = '当前版本 ' + s.version; $('update-detail').textContent = '更新源未提供更高版本。';
+      busy = false; pending = false; $('update-title').textContent = '当前版本 ' + s.version;
+      $('update-detail').textContent = '更新源未提供更高版本。' + (s.crash ? ' ⚠ 上次异常退出：' + s.crash : '');
     } else if (s.state === 'needapk') {
       busy = false; pending = false; $('update-title').textContent = '需要安装新版 APK ' + s.version;
       $('update-detail').textContent = s.notes || '热更装不下该版本的原生改动，请覆盖安装最新 APK 后再检查更新。';
@@ -273,6 +274,7 @@
     if(except!=='vod'&&$('vod-dialog').open)$('vod-dialog').close();
     if(except!=='music'&&$('music-dialog').open)$('music-dialog').close();
     if(except!=='drama'&&$('drama-dialog').open)$('drama-dialog').close();
+    if(except!=='deal'&&$('deal-dialog').open)$('deal-dialog').close();
   }
   $('vod-open').addEventListener('click',function(){closeOthers('vod');setTimeout(refresh,0);});
   $('deal-open').addEventListener('click',function(){closeOthers('deal');});

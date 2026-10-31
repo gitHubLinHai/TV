@@ -148,3 +148,14 @@
    - Manifest 新增 REQUEST_INSTALL_PACKAGES 权限与 androidx.core FileProvider（com.seagull.tv.apk，files-path update.apk）。
 2. 发布流程更新：make_wgt（自增+出 WGT）→ build_apk（出 APK）→ make_wgt --apk-info（注入 APK 信息到 version.json）→ 三件套发布到仓库 release/。
 3. 回归：test_ui 新增 foundapk/downloadingapk/installready 状态断言；test_native_update.py 全过（多源选择/断点/损坏包/Wi-Fi/回滚）；test_ui/vod/sources/4kvm 网页回归通过；真机影视插桩通过。
+
+补充（同日第十七轮）：影视页布局调整（v1.0.35 / 壳 19 不变，仅网页层）
+1. 用户反馈"工具按钮+搜索这部分应放到最近更新上方"。调整影视页结构：工具行（刷新/返回片单/本地片库）与搜索框之后紧跟分类芯片行（最近更新为第一芯片）与排序行，直达片单网格；原"片源管理"+"自定义片单路径"两大块折叠为列表下方的"片源管理与自定义路径"details（默认收起，点开可用，所有元素 id 不变）。
+2. 测试：test_vod_custom 增加展开折叠块步骤（此前两次点击 summary 会把已展开的块再次折叠，改为仅在关闭时展开）；网页回归全过。
+3. 发布：v1.0.35 WGT+APK+version.json 已传仓库；真机与浏览器（127.0.0.1:8138）均已验证新布局。
+
+补充（同日第十八轮）：页签切换修复与崩溃记录（v1.0.36 / 壳 20）
+1. 修复"点优惠再点音乐页签无效"：closeOthers 自优惠页签加入起漏关 deal-dialog——从优惠页切音乐/影视时新页在下层打开、优惠页盖在上面。补上 deal 关闭逻辑；浏览器实测优惠↔音乐互切正常。
+2. 新增崩溃记录：UncaughtExceptionHandler 将堆栈写入 last_crash.txt（8KB 截断），应用启动 90 秒无崩溃自动清除；更新检查在"当前版本"面板追加"⚠ 上次异常退出：<首行>"，便于把崩溃原因反馈给开发。注意：该记录仅捕获 Java 层未捕获异常。
+3. 用户报告的三问题处理：页签无效=本轮修复；音乐闪退=模拟器全流程未复现（音乐用例通过），已加崩溃记录，下次闪退后面板会显示首行原因，请截图反馈；最近更新/电影页无数据=大概率是来源站点对当前网络的反爬拦截（状态栏会显示各源诊断），可稍后点刷新重试，若持续请反馈状态栏文字。
+4. 回归：test_ui/vod/sources/music 全过；test_native_update.py 全过；真机音乐插桩通过。
