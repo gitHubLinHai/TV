@@ -1,14 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 136,
-  "versionName": "1.0.36",
+  "versionCode": 137,
+  "versionName": "1.0.37",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.36.wgt",
+  "wgt": "TV-v1.0.37.wgt",
   "wgtSize": 60134,
-  "wgtSha256": "f744d8dbc02631f3ba0f208d64060e07934aa756c4aa084a273faf774649cb61",
-  "notes": "修复从优惠页切换页签无效（优惠页未关闭）；新增崩溃记录提示",
-  "apk": "TV-v1.0.36.apk",
-  "apkCode": 136,
-  "apkSize": 3465906,
-  "apkSha256": "73d7a6ae4ad057ddfda05a9ecadc8035504b75378dfb3a45b28b01dab2df7a20"
+  "wgtSha256": "8484bd7e6b5a97d74e21577869233d707466373930c1038ba703e4759f57bcd4",
+  "notes": "更新源新增 GitHub API 通道，避免 CDN 缓存导致的无法检查更新",
+  "apk": "TV-v1.0.37.apk",
+  "apkCode": 137,
+  "apkSize": 3470002,
+  "apkSha256": "4ae7f8f1aeb0faa8d5cf84236a9bc6094ee7f8e54d91a48f50d7b64c0cbcbf93"
 }
