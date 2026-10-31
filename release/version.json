@@ -1,14 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 144,
-  "versionName": "1.0.44",
+  "versionCode": 145,
+  "versionName": "1.0.45",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.44.wgt",
+  "wgt": "TV-v1.0.45.wgt",
   "wgtSize": 60909,
-  "wgtSha256": "e1c2ec8f7fccfa84541c2882ccca6c46042b69aa23420431e364aab44098203f",
-  "notes": "影视封面放大一半（宽屏 3 列/手机 2 列），类型徽标同步放大",
-  "apk": "TV-v1.0.44.apk",
-  "apkCode": 144,
+  "wgtSha256": "61e946a4597e298c6ef66729e3ef95e77f04218b57ac4d977f5430c642412e52",
+  "notes": "4KVM 解析超时放宽至 45/50 秒，慢网络下自动连播更稳",
+  "apk": "TV-v1.0.45.apk",
+  "apkCode": 145,
   "apkSize": 3470002,
-  "apkSha256": "d86aa8d68a02d6f4a11ae5b4e0bd4911b474359b55f1dec87cff1ccf7ecf5256"
+  "apkSha256": "45a0cf2f948c838e28d4a116fed53c7f9e4c8856c05bac51f40919cfde393f8e"
 }
