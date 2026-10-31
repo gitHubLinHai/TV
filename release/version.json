@@ -1,14 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 138,
-  "versionName": "1.0.38",
+  "versionCode": 139,
+  "versionName": "1.0.39",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.38.wgt",
-  "wgtSize": 60141,
-  "wgtSha256": "2e8fbbeb8aff9ab77b409e83ccd35b457d82aecacdab82b7ac3f3c7a93a99242",
-  "notes": "片源管理与自定义路径移至搜索影视上方",
-  "apk": "TV-v1.0.38.apk",
-  "apkCode": 138,
+  "wgt": "TV-v1.0.39.wgt",
+  "wgtSize": 60142,
+  "wgtSha256": "4fc6722b66b96461479bb7909709ef5494468aad73f87ad65c8630578229d452",
+  "notes": "播放器手势重做为爱奇艺式：双击暂停/播放、单击控制层、长按2倍速（不弹面板）、左右滑快进快退",
+  "apk": "TV-v1.0.39.apk",
+  "apkCode": 139,
   "apkSize": 3470002,
-  "apkSha256": "682b13bbf2e3f2ab5e9f00ca555437dbdd68a77ecac04465d9bd4fdd214c220b"
+  "apkSha256": "20c9dc5121503e19c37a5786aee40a172ed657da135c6a00c63437d24ff3d5a4"
 }
