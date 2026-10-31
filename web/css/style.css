@@ -132,3 +132,19 @@ header .bookmarks-button{margin-left:auto;margin-right:8px;padding:8px;font-size
 #vod-sorts{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 2px}
 #vod-sorts button{background:transparent;border:1px solid #46554f;color:#93a89b;padding:6px 13px;border-radius:8px;font-size:11px}
 #vod-sorts button.selected{color:var(--lime);border-color:var(--lime);background:transparent}
+/* 音乐页样式（与影视页统一的卡片式列表） */
+#music-list{gap:5px;margin-top:10px}
+.song-row{border-top:0;border-radius:12px;padding:9px 12px;gap:12px;background:#ffffff05;border:1px solid #ffffff06}
+.song-row:active{background:#ffffff10}
+.song-row b{width:30px;height:30px;line-height:30px;padding:0;border-radius:9px;background:#2e3833;color:#8fa096;font-size:12px;text-align:center;font-weight:600}
+.song-row:nth-of-type(-n+3) b{background:var(--lime);color:#24311d}
+.song-row .song-info{display:flex;flex-direction:column;gap:3px;min-width:0}
+.song-row strong{font-size:13px;color:#e1e7e3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.song-row small{font-size:11px;color:#89938f}
+.song-row.playing{background:#24311d;border-color:#4c5f23;box-shadow:inset 3px 0 0 var(--lime)}
+.song-row.playing b{background:var(--lime);color:#24311d}
+.song-row.playing strong{color:var(--lime)}
+.song-row.playing .song-info::after{content:"♪ 正在播放";font-size:10px;color:var(--lime);margin-top:2px}
+.queue-btn{background:#2e3833;color:#d6e4d4;padding:9px 14px;border-radius:18px;font-size:12px;border:1px solid #ffffff0a}
+.queue-btn.selected{background:var(--lime);color:#24311d;font-weight:600}
+
