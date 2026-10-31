@@ -31,8 +31,10 @@ public final class VideoActivity extends Activity {
     private static final Object END_TOKEN = new Object();
     private ExoPlayer video;
     private String key;
-    private boolean finished, privateMode, seeking, endedOnce, controlsHidden, musicMode, boosting;
-    private float baseSpeed = 1f;
+    private boolean finished, privateMode, seeking, endedOnce, controlsHidden, musicMode, boosting, seekGesture;
+    private float baseSpeed = 1f, seekDeltaMs;
+    private long seekBaseMs;
+    private TextView gestureHint;
     private TextView status, time, title;
     private Button play;
     private SeekBar seek;
@@ -63,6 +65,13 @@ public final class VideoActivity extends Activity {
         surface.setTranslationY(Math.max(-maxTy,Math.min(maxTy,panY)));
     }
     private void resetZoom(){zoom=1f;panX=0;panY=0;applyTransform();}
+    private void showGestureHint(String text,long autoHideMs){
+        handler.removeCallbacks(hideHintRun);
+        gestureHint.setText(text);gestureHint.setVisibility(View.VISIBLE);
+        if(autoHideMs>0)handler.postDelayed(hideHintRun,autoHideMs);
+    }
+    private final Runnable hideHintRun=()->gestureHint.setVisibility(View.GONE);
+    private void hideGestureHint(){handler.removeCallbacks(hideHintRun);gestureHint.setVisibility(View.GONE);}
     // ===== 歌词：LRC 解析 + 居中五行滚动（当前行放大高亮）=====
     private boolean parseLyrics(String raw){
         try{
@@ -187,7 +196,7 @@ public final class VideoActivity extends Activity {
         bottomBar.addView(controls);
         LinearLayout options=new LinearLayout(this);options.setGravity(Gravity.CENTER_VERTICAL);
         Button scale=new Button(this);scale.setText("适应");options.addView(scale,new LinearLayout.LayoutParams(0,-2,1));
-        scale.setOnClickListener(v->{scaleMode=(scaleMode+1)%3;scale.setText(new String[]{"适应","拉伸铺满","裁剪铺满"}[scaleMode]);resizeVideo();});
+        scale.setOnClickListener(v->{resetZoom();scaleMode=(scaleMode+1)%3;scale.setText(new String[]{"适应","拉伸铺满","裁剪铺满"}[scaleMode]);resizeVideo();});
         Button speed=new Button(this);speed.setText("1.0×");options.addView(speed,new LinearLayout.LayoutParams(0,-2,1));
         speed.setOnClickListener(v->{final String[] labels={"0.5×","0.75×","1.0×","1.25×","1.5×","2.0×","3.0×"};final float[] rates={.5f,.75f,1f,1.25f,1.5f,2f,3f};
             optionsDialog=new android.app.AlertDialog.Builder(this).setTitle("播放速度").setItems(labels,(d,w)->{video.setPlaybackSpeed(rates[w]);speed.setText(labels[w]);}).show();});
@@ -205,6 +214,9 @@ public final class VideoActivity extends Activity {
         bottomBar.addView(options);
         root.addView(bottomBar,new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM));
         // 音乐播放：解析歌词并在画面中央滚动显示（当前行高亮，上下各两行渐隐）。
+        gestureHint=new TextView(this);gestureHint.setTextColor(0xffffffff);gestureHint.setTextSize(18);gestureHint.setShadowLayer(6,0,2,0xff000000);gestureHint.setGravity(Gravity.CENTER);gestureHint.setVisibility(View.GONE);gestureHint.setSaveEnabled(false);
+        gestureHint.setTranslationY(-(int)(110*getResources().getDisplayMetrics().density));
+        root.addView(gestureHint,new FrameLayout.LayoutParams(-2,-2,Gravity.CENTER));
         String lyrics=getIntent().getStringExtra("lyrics");
         if(key.startsWith("music:")&&lyrics!=null&&lyrics.length()>4)buildLyrics(root,lyrics);
         setContentView(root);
@@ -219,23 +231,38 @@ public final class VideoActivity extends Activity {
         });
         GestureDetector tap=new GestureDetector(this,new GestureDetector.SimpleOnGestureListener(){
             @Override public boolean onSingleTapConfirmed(MotionEvent e){toggleControls();return true;}
-            @Override public boolean onDoubleTap(MotionEvent e){resetZoom();return true;}
-            // 长按画面临时 2 倍速（在当前倍率上翻倍，上限 3 倍），松手恢复；抬起在 OnTouchListener 处理。
+            // 双击：暂停/播放（爱奇艺式）
+            @Override public boolean onDoubleTap(MotionEvent e){
+                if(video==null||boosting||seekGesture)return true;
+                if(video.isPlaying()){video.pause();showGestureHint("已暂停",700);}
+                else{video.play();showGestureHint("播放中",700);}
+                return true;}
+            // 长按：临时 2 倍速（当前倍率翻倍，上限 3 倍），松手恢复；不弹控制层。
             @Override public void onLongPress(MotionEvent e){
-                if(video==null||boosting)return;
+                if(video==null||boosting||seekGesture)return;
                 boosting=true;baseSpeed=video.getPlaybackParameters().speed;
                 float boosted=Math.min(3f,baseSpeed*2f);
                 video.setPlaybackSpeed(boosted);
-                showControls();status.setText("已按住 · "+String.format(java.util.Locale.ROOT,"%.1f× 快进中",boosted));scheduleHide();
+                showGestureHint(String.format(java.util.Locale.ROOT,"%.1f× 快进中",boosted),0);
             }
             @Override public boolean onScroll(MotionEvent e1,MotionEvent e2,float dx,float dy){
-                if(zoom>1.001f){panX-=dx;panY-=dy;applyTransform();}return true;}
+                if(zoom>1.001f||pinch.isInProgress()||e2.getPointerCount()>1){panX-=dx;panY-=dy;applyTransform();return true;}
+                if(video==null||boosting)return true;
+                long duration=video.getDuration();
+                if(duration<=0||Math.abs(dx)<=Math.abs(dy))return true;
+                if(!seekGesture){seekGesture=true;seekBaseMs=video.getCurrentPosition();seekDeltaMs=0;}
+                seekDeltaMs-=dx*(90000f/Math.max(1,frame.getWidth()));
+                long target=Math.max(0,Math.min(duration,seekBaseMs+(long)seekDeltaMs));
+                long offset=target-seekBaseMs;
+                showGestureHint((offset>=0?"快进 +":"快退 -")+clock(Math.abs(offset)),0);
+                return true;}
         });
         frame.setOnTouchListener((v,ev)->{
             pinch.onTouchEvent(ev);tap.onTouchEvent(ev);
             int action=ev.getActionMasked();
-            if(boosting&&(action==MotionEvent.ACTION_UP||action==MotionEvent.ACTION_CANCEL)&&video!=null){
-                boosting=false;video.setPlaybackSpeed(baseSpeed);status.setText("已恢复常速");scheduleHide();
+            if(video!=null&&(action==MotionEvent.ACTION_UP||action==MotionEvent.ACTION_CANCEL)){
+                if(boosting){boosting=false;video.setPlaybackSpeed(baseSpeed);hideGestureHint();}
+                if(seekGesture){seekGesture=false;video.seekTo(Math.max(0,Math.min(video.getDuration(),seekBaseMs+(long)seekDeltaMs)));hideGestureHint();}
             }
             return true;});
         HashMap<String,String> headers = new HashMap<>();
