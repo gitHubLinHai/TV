@@ -44,7 +44,7 @@ public class MainActivity extends Activity {
     };
 
     private static final String ORIGIN = "https://app.tv.local/";
-    private static final int SHELL_VERSION = 20;
+    private static final int SHELL_VERSION = 21;
     private final ExecutorService vodPool = Executors.newFixedThreadPool(2);
     private final ExecutorService netdiskPool = Executors.newFixedThreadPool(3);
     private static final AtomicBoolean UPDATING = new AtomicBoolean();
@@ -474,7 +474,7 @@ public class MainActivity extends Activity {
                             jsCallback(cb, o);
                             return;
                         } else if (next < activeCode()) {
-                            cbError(cb, "更新源版本落后于当前 v" + activeName() + "，暂时无法确认更新，请稍后重试");
+                            cbError(cb, "更新源缓存落后于当前 v" + activeName() + "：请到发布页手动安装最新 APK，或稍后重试");
                             return;
                         } else {
                             o.put("state", "uptodate");
@@ -584,7 +584,7 @@ public class MainActivity extends Activity {
                         if (remote.optInt("versionCode") > activeCode() && remote.optInt("minShellVersion", 1) > SHELL_VERSION)
                             throw new Exception("该版本需要先覆盖安装新版 APK，无法通过应用内热更获得");
                         if (remote.optInt("versionCode") < activeCode()) {
-                            cbError(cb, "更新源版本落后于当前 v" + activeName() + "，暂时无法确认更新，请稍后重试");
+                            cbError(cb, "更新源缓存落后于当前 v" + activeName() + "：请手动安装最新 APK，或稍后重试");
                             return;
                         }
                         if (remote.optInt("versionCode") == activeCode()) {
@@ -773,6 +773,38 @@ public class MainActivity extends Activity {
                 }
             });
         }
+        // 第 4 源：GitHub Contents API（api.github.com 与 github.com 链路不同且内容实时），
+        // 用于对抗 jsDelivr 边缘节点对 @main 分支文件的长期缓存（缓存穿透参数会被忽略）。
+        tasks.add(new Callable<JSONObject>() {
+            public JSONObject call() throws Exception {
+                URL u = new URL("https://api.github.com/repos/gitHubLinHai/TV/contents/release/version.json");
+                HttpURLConnection c = (HttpURLConnection) (wifi == null ? u.openConnection() : wifi.openConnection(u));
+                c.setConnectTimeout(4000);
+                c.setReadTimeout(6000);
+                c.setUseCaches(false);
+                c.setRequestProperty("Accept", "application/vnd.github.raw");
+                c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) TV-Update-Check");
+                try {
+                    int status = c.getResponseCode();
+                    if (status != 200) { failures.add("API HTTP " + status); return null; }
+                    ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                    try (InputStream in = c.getInputStream()) {
+                        byte[] b = new byte[4096];
+                        int n;
+                        while ((n = in.read(b)) != -1) {
+                            if (bo.size() + n > 262144) return null;
+                            bo.write(b, 0, n);
+                        }
+                    }
+                    String body = new String(bo.toByteArray(), "UTF-8").trim();
+                    if (body.isEmpty() || body.charAt(0) != '{') { failures.add("API 清单无效"); return null; }
+                    JSONObject o = new JSONObject(body);
+                    if (!o.optString("appId").equals("com.seagull.tv") || o.optInt("versionCode", 0) <= 0) { failures.add("API 清单无效"); return null; }
+                    o.put("_base", CDNS[0]);
+                    return o;
+                } finally { c.disconnect(); }
+            }
+        });
         try {
             JSONObject best = pendingUpdate();
             for (Future<JSONObject> result : pool.invokeAll(tasks, 9, TimeUnit.SECONDS)) {
