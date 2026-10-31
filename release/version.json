@@ -1,14 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 142,
-  "versionName": "1.0.42",
+  "versionCode": 143,
+  "versionName": "1.0.43",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.42.wgt",
-  "wgtSize": 60715,
-  "wgtSha256": "d4c0f1096d4039bdfc36f81c8710e84bd9695296a137a345696d01d8e82a3ae0",
-  "notes": "类型徽标与封面网格响应式分级（手机 4 列/中屏 6 列/宽屏 8 列），修复窄屏徽标与封面重叠",
-  "apk": "TV-v1.0.42.apk",
-  "apkCode": 142,
+  "wgt": "TV-v1.0.43.wgt",
+  "wgtSize": 60942,
+  "wgtSha256": "ec328e8796c28fce3eef9525ca95a7c12e14fde260577d0b5500130f94f0d4ef",
+  "notes": "音乐页样式与影视页统一：歌曲行卡片化、排名徽章、播放中高亮与正在播放标记",
+  "apk": "TV-v1.0.43.apk",
+  "apkCode": 143,
   "apkSize": 3470002,
-  "apkSha256": "3306e9a41b60280f546f5b987de1864d53b0121ad4be72e787504e04a7111f39"
+  "apkSha256": "6d4b9ca1999ca9cb422b0ec3b5aac88bc10f8fb82a6c280a5fa9876058a65bc6"
 }
