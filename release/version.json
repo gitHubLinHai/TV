@@ -1,14 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 137,
-  "versionName": "1.0.37",
+  "versionCode": 138,
+  "versionName": "1.0.38",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.37.wgt",
-  "wgtSize": 60134,
-  "wgtSha256": "8484bd7e6b5a97d74e21577869233d707466373930c1038ba703e4759f57bcd4",
-  "notes": "更新源新增 GitHub API 通道，避免 CDN 缓存导致的无法检查更新",
-  "apk": "TV-v1.0.37.apk",
-  "apkCode": 137,
+  "wgt": "TV-v1.0.38.wgt",
+  "wgtSize": 60141,
+  "wgtSha256": "2e8fbbeb8aff9ab77b409e83ccd35b457d82aecacdab82b7ac3f3c7a93a99242",
+  "notes": "片源管理与自定义路径移至搜索影视上方",
+  "apk": "TV-v1.0.38.apk",
+  "apkCode": 138,
   "apkSize": 3470002,
-  "apkSha256": "4ae7f8f1aeb0faa8d5cf84236a9bc6094ee7f8e54d91a48f50d7b64c0cbcbf93"
+  "apkSha256": "682b13bbf2e3f2ab5e9f00ca555437dbdd68a77ecac04465d9bd4fdd214c220b"
 }
