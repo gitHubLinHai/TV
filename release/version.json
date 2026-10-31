@@ -1,14 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 141,
-  "versionName": "1.0.41",
+  "versionCode": 142,
+  "versionName": "1.0.42",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.41.wgt",
-  "wgtSize": 60692,
-  "wgtSha256": "023626c3e2a182c7a5c8b03fd4c8eb74dca02b6914ae21a8f04f49bcbc0d79c0",
-  "notes": "4KVM 主机名归一化：裸域/别名统一路由，修复部分设备 4KVM 无片源",
-  "apk": "TV-v1.0.41.apk",
-  "apkCode": 141,
+  "wgt": "TV-v1.0.42.wgt",
+  "wgtSize": 60715,
+  "wgtSha256": "d4c0f1096d4039bdfc36f81c8710e84bd9695296a137a345696d01d8e82a3ae0",
+  "notes": "类型徽标与封面网格响应式分级（手机 4 列/中屏 6 列/宽屏 8 列），修复窄屏徽标与封面重叠",
+  "apk": "TV-v1.0.42.apk",
+  "apkCode": 142,
   "apkSize": 3470002,
-  "apkSha256": "4f47a19318fba7e429adae2c45ded49891b6ad0280c9e630268fba65e745d5a2"
+  "apkSha256": "3306e9a41b60280f546f5b987de1864d53b0121ad4be72e787504e04a7111f39"
 }
