@@ -159,3 +159,9 @@
 2. 新增崩溃记录：UncaughtExceptionHandler 将堆栈写入 last_crash.txt（8KB 截断），应用启动 90 秒无崩溃自动清除；更新检查在"当前版本"面板追加"⚠ 上次异常退出：<首行>"，便于把崩溃原因反馈给开发。注意：该记录仅捕获 Java 层未捕获异常。
 3. 用户报告的三问题处理：页签无效=本轮修复；音乐闪退=模拟器全流程未复现（音乐用例通过），已加崩溃记录，下次闪退后面板会显示首行原因，请截图反馈；最近更新/电影页无数据=大概率是来源站点对当前网络的反爬拦截（状态栏会显示各源诊断），可稍后点刷新重试，若持续请反馈状态栏文字。
 4. 回归：test_ui/vod/sources/music 全过；test_native_update.py 全过；真机音乐插桩通过。
+
+补充（同日第十九轮）：更新源缓存死锁修复（v1.0.37 / 壳 21）
+1. 用户反馈 v1.0.34 上提示"更新源落后于当前 v1.0.34，无法更新"。根因：jsDelivr 对 @main 分支文件有边缘长期缓存且忽略缓存穿透参数——国内可达的 jsDelivr 节点长期回源旧 version.json，而 raw.githubusercontent 在手机网络不可达 → 三源并行后"最大版本"仍是旧清单 → 判定落后死锁（新版清单永远看不到，热更与 APK 自更新都不会触发）。
+2. 修复：fetchVersionJson 新增第 4 源——GitHub Contents API（api.github.com 与 github.com 走不同链路、内容实时无长缓存，Accept: application/vnd.github.raw 直接返回原始 JSON）；四源仍取 versionCode 最大者。同时"落后"文案改为明确引导手动安装。
+3. 用户当前处置：v1.0.34 设备请手动覆盖安装一次 TV-v1.0.36.apk 或 TV-v1.0.37.apk（发布目录均有），之后所有更新（含 APK 自更新）自动恢复。
+4. 回归：test_native_update.py 全过（多源/断点/损坏包/Wi-Fi/回滚）；test_ui、影视真机插桩通过。发版注意：make_wgt 已新增 --apk-info 步骤（APK 构建后注入 apk 字段）。
