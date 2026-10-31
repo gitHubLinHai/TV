@@ -9,11 +9,11 @@ const assert=require('node:assert/strict');const {chromium}=require('playwright'
    playVodVideo:(url,title,key,host)=>calls.push({action:'play',url,title,key})};});
  await p.goto('http://127.0.0.1:8138/');await p.locator('#vod-open').click();await p.locator('.vod-card').waitFor();
  // 自定义路径：合法路径触发抓取并持久化，非法路径被拒。
- await p.locator('#vod-custom').fill('https://www.555yy1.com/vodshow/20-----------.html');await p.locator('#vod-custom-refresh').click();
+ await p.evaluate(()=>{const d=document.getElementById('vod-admin');if(!d.open)d.open=true;});await p.locator('#vod-custom').fill('https://www.555yy1.com/vodshow/20-----------.html');await p.locator('#vod-custom-refresh').click();
  await p.waitForFunction(()=>window.calls.some(c=>c.action==='fetch'&&c.path==='/vodshow/20-----------.html'));
  assert.equal(await p.evaluate(()=>localStorage.getItem('tv_vod_custom')),'/vodshow/20-----------.html');
  const before=(await p.evaluate(()=>window.calls.filter(c=>c.action==='fetch').length));
- await p.locator('#vod-custom').fill('https://evil.example/voddetail/1.html');await p.locator('#vod-custom-refresh').click();
+ await p.evaluate(()=>{const d=document.getElementById('vod-admin');if(!d.open)d.open=true;});await p.locator('#vod-custom').fill('https://evil.example/voddetail/1.html');await p.locator('#vod-custom-refresh').click();
  await p.waitForFunction(()=>document.getElementById('vod-status').textContent.includes('不受支持'));
  assert.equal(await p.evaluate(()=>window.calls.filter(c=>c.action==='fetch').length),before,'invalid custom path fetched');
  // 连播：播完第一集后 __videoEnded 自动播第二集、再播第三集，最后一集停下。
