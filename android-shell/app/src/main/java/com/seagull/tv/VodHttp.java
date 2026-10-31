@@ -1,6 +1,7 @@
 package com.seagull.tv;
 
 import java.io.*;
+import java.util.Locale;
 import java.net.*;
 import java.util.zip.GZIPInputStream;
 import org.json.JSONObject;
@@ -43,7 +44,9 @@ public final class VodHttp {
     }
     public static JSONObject fetch(String host,String path)throws Exception{
         if(!allowedHost(host))throw new IOException("片源地址无效");
-        if(Vod4kvmHttp.HOST.equals(host))return Vod4kvmHttp.fetch(path);
+        // 4KVM 的裸域与 www 均路由到 4KVM 处理器（用户可能存了不带 www 的源）
+        String hostLower = host.toLowerCase(Locale.ROOT);
+        if(hostLower.equals("4kvm.net") || hostLower.endsWith(".4kvm.net")) return Vod4kvmHttp.fetch(path);
         if(!allowedPath(path))throw new IOException("不支持的影视页面地址");
         for(int attempt=0;attempt<3;attempt++){
             HttpURLConnection c=(HttpURLConnection)new URL("https://"+host+path).openConnection();

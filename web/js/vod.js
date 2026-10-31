@@ -2,7 +2,7 @@
   'use strict';
   var bridge=window.TVBridge,$=function(id){return document.getElementById(id);};
   // 站点解析知识已模块化到 vod-sources.js（片源适配器注册表）。
-  var serial=0,epoch=0,pending={},siteNextRefs=[],path='',allItems=[],detail=null,scroll=0,playing=false,currentEpisode=null,currentCat=0,viewIndex=0,totalSitePages=0,sitePageItems=0,loadingMore=false,seenTitles=Object.create(null),sort='',lastPlan=null,apiClassesCache={},noCat=[];var PAGE=10;
+  var serial=0,epoch=0,pending={},siteNextRefs=[],path='',allItems=[],detail=null,scroll=0,playing=false,currentEpisode=null,currentCat=0,viewIndex=0,totalSitePages=0,sitePageItems=0,loadDiag=[],loadDone=0,loadingMore=false,seenTitles=Object.create(null),sort='',lastPlan=null,apiClassesCache={},noCat=[];var PAGE=10;
   var KIND_KEYWORDS={'电视剧':['电视剧','连续剧','国产剧','剧'],'电影':['电影'],'短剧':['短剧'],'动漫':['动漫','动画'],'综艺纪录':['综艺','纪录','娱乐']};
   var categories=[['最近更新','__latest__'],['电视剧','/vodshow/2-----------.html'],['电影','/vodshow/1-----------.html'],['短剧','/vodshow/125-----------.html'],['动漫','/vodshow/4-----------.html'],['综艺纪录','/vodshow/3-----------.html']];
   var SORTS=[['综合',''],['最热播','hits'],['高分','score']];
@@ -17,6 +17,9 @@
     var raw=null;
     try{raw=window.TVPrivacy.enabled?sessionStorage.getItem('tv_vod_sources'):localStorage.getItem('tv_vod_sources');}catch(e){}
     if(raw)try{var s=JSON.parse(raw);if(Array.isArray(s)&&s.length&&s.every(function(x){return x&&(x.type==='api'?typeof x.api==='string':typeof x.host==='string')&&typeof x.name==='string';})){
+      // 归一化 4KVM 主机名（裸域/别名统一为 www.4kvm.net 并强制 4kvm-page 适配器）
+      s.forEach(function(x){if(x.host&&/(^|\.)4kvm\.net$/.test(x.host.toLowerCase())&&!x.type){x.host='www.4kvm.net';x.adapter='4kvm-page';}});
+      for(var i=s.length-1;i>0;i--)if(s[i].host==='www.4kvm.net'&&s.slice(0,i).some(function(y){return y.host===s[i].host;}))s.splice(i,1);
       if(!s.some(function(x){return x.adapter==='4kvm-page'||x.host==='www.4kvm.net';}))s.push({name:'4KVM',host:'www.4kvm.net',adapter:'4kvm-page',on:true,builtin:true});
       return s;
     }}catch(e){}
@@ -120,7 +123,7 @@
     var box=$('vod-list');box.textContent='';
     var frag=document.createDocumentFragment();
     allItems.slice(viewIndex*PAGE,viewIndex*PAGE+PAGE).forEach(function(item){
-      var kind=item.kind||kindOf(item.note);
+      var kind=item.kind||(currentCat>0?categories[currentCat][0]:kindOf(item.note));
       var card=button('',function(){openDetail(item);},'vod-card'+(kind?' kind-'+KIND_CLASS[kind]:''));var cover=document.createElement('div');cover.className='vod-cover';cover.textContent='暂无封面';
       if(item.cover){cover.textContent='';var img=document.createElement('img');img.src=item.cover;img.alt='';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';img.addEventListener('error',function(){
         // 百度图片代理不稳定：失败一次后换上游直链重试，再失败才显示占位。
@@ -152,59 +155,88 @@
         if(x.cover&&x.cover.charAt(0)==='/')x.cover='https://'+s.host+x.cover;
         return x;})};
   }
+  // 流式渲染：单个片源返回即合并展示，不等待其余源
   function applyResults(results,fromCache){
     var diag=[],ok=0;
     results.forEach(function(r){
-      if(r.error){diag.push(r.name+'：'+r.error);return;}
+      if(r.error){diag.push(r.name+"\uFF1A"+r.error);return;}
       ok++;totalSitePages=Math.max(totalSitePages,r.total);
       if(r.total>1&&r.items.length>sitePageItems)sitePageItems=r.items.length;
       if(r.nextRef)siteNextRefs.push(r.nextRef);
       r.items.forEach(function(x){if(seenTitles[x.key])return;seenTitles[x.key]=true;allItems.push(x);});
     });
-    if(!ok){allItems=[];renderList();renderPager();status(diag.join('；')||'来源没有返回片单，可能无结果或页面结构已变化');return;}
+    if(!ok){allItems=[];renderList();renderPager();status(diag.join("\uFF1B")||"来源没有返回片单，可能无结果或页面结构已变化");return;}
     showView();
-    if(noCat.length)diag=diag.length?diag:noCat.map(function(n){return n+'：无分类 '+catName;}).concat(diag);
-    status(statusFor()+(ok>1?' · '+ok+'源':'')+(diag.length?' · '+diag.join('；'):'')+(fromCache?' · 缓存':''));
+    if(noCat.length)diag=diag.length?diag:noCat.map(function(n){return n+"\uFF1A无分类 "+catName;}).concat(diag);
+    status(statusFor()+(ok>1?" · "+ok+"源":"")+(diag.length?" · "+diag.join("\uFF1B"):"")+(fromCache?" · 缓存":""));
+  }
+  // 流式：单片源返回即合并展示（applyResults 内按标题去重，不会重复），全部返回后给出最终汇总
+  function applySource(pk,fromCache){
+    if(pk.error){applyError(pk.name,pk.error);return;}
+    applyResults([pk],fromCache);
+    if(!fromCache)status("正在读取影视片单… 已获取 "+allItems.length+" 部");
+  }
+  function applyError(name,message){
+    loadDiag.push(name+"\uFF1A"+(message||"连接失败"));
+    var diag=loadDiag.slice();
+    if(!allItems.length)status("来源没有返回片单，可能无结果或页面结构已变化；"+diag.join("\uFF1B"));
+    else status(statusFor()+" · "+diag.join("\uFF1B"));
   }
   function loadList(target,bypass,plan,keepScroll){
+    var run=++epoch;playing=false;showList();path=target;viewIndex=0;allItems=[];siteNextRefs=[];totalSitePages=0;sitePageItems=0;loadDiag=[];loadingMore=false;seenTitles=Object.create(null);noCat=[];$('vod-pager').hidden=true;
     var enabled=enabledSources();
     if(plan)lastPlan=plan;else plan=lastPlan;
-    var run=++epoch;playing=false;showList();path=target;viewIndex=0;allItems=[];siteNextRefs=[];totalSitePages=0;sitePageItems=0;seenTitles=Object.create(null);noCat=[];$('vod-pager').hidden=true;
-    if(!enabled.length){status('没有启用的片源：请在片源管理中至少勾选一个');return Promise.resolve();}
-    renderList();var scroller=document.querySelector('#vod-dialog .page-scroll');
+    if(!enabled.length){status("没有启用的片源：请在片源管理中至少勾选一个");return Promise.resolve();}
+    renderList();var scroller=document.querySelector("#vod-dialog .page-scroll");
     if(!keepScroll)scroller.scrollTop=0;
-    var pages=enabled.filter(function(s){return s.type!=='api';});
-    var apis=enabled.filter(function(s){return s.type==='api';});
+    var pages=enabled.filter(function(s){return s.type!=="api";});
+    var apis=enabled.filter(function(s){return s.type==="api";});
     var catName=plan&&plan.cat;
     var pageTargets=pages.map(function(s){
       var adapter=VodSources.resolve(s),targetPath=null;
-      if(catName==='最近更新')targetPath=adapter.latestPath||adapter.defaultPath||null;
+      if(catName==="最近更新")targetPath=adapter.latestPath||adapter.defaultPath||null;
       else if(catName)targetPath=adapter.categoryPath?adapter.categoryPath(catName):VodSources.categoryPath(s,catName,categories);
       else if(plan&&plan.q&&adapter.searchPath)targetPath=adapter.searchPath(plan.q);
       else{try{targetPath=adapter.sitePath(target);}catch(e){}if(!targetPath&&adapter.defaultPath)targetPath=adapter.defaultPath;}
       if(targetPath&&adapter.applySort)targetPath=adapter.applySort(targetPath,sort);
       return {s:s,path:targetPath};
     });
-    var noCat=pageTargets.filter(function(pt){return !pt.path;}).map(function(pt){return pt.s.name+'：无分类 '+catName;});
+    var noCat=pageTargets.filter(function(pt){return !pt.path;}).map(function(pt){return pt.s.name+"\uFF1A无分类 "+catName;});
     pages=pageTargets.filter(function(pt){return !!pt.path;}).map(function(pt){return pt.s;});
     var catTargets=pageTargets;
     var cached=!bypass&&!apis.length&&catTargets.every(function(pt){var k=pt.s.host+pt.path,hit=docCache[k];return hit&&Date.now()-hit.at<DOC_TTL;});
-    if(cached){applyResults(catTargets.filter(function(pt){return !!pt.path;}).map(function(pt){var pk=packSource(pt.s,parsePageList(pt.s,docCache[pt.s.host+pt.path].data.html,pt.path));
-      if(catName&&catName!=='最近更新')pk.items.forEach(function(x){if(!x.kind)x.kind=catName;});return pk;}),true);return Promise.resolve();}
-    status('正在读取影视片单…（'+enabled.length+'个片源）');
+    if(cached){applyResults(catTargets.filter(function(pt){return !!pt.path;}).map(function(pt){return packSource(pt.s,parsePageList(pt.s,docCache[pt.s.host+pt.path].data.html,pt.path));}),true);return Promise.resolve();}
+    status("正在读取影视片单…（"+enabled.length+"个片源）");
     var pageJobs=catTargets.filter(function(pt){return !!pt.path;}).map(function(pt){
-      return fetchDoc(pt.path,pt.s.host,bypass).then(function(reply){var pk=packSource(pt.s,parsePageList(pt.s,reply.html,pt.path));
-        if(catName&&catName!=='最近更新')pk.items.forEach(function(x){if(!x.kind)x.kind=catName;});
-        return pk;})
-        .catch(function(e){return {host:pt.s.host,name:pt.s.name,error:e.message||'连接失败'};});
+      return fetchDoc(pt.path,pt.s.host,bypass).then(function(reply){
+        var pk=packSource(pt.s,parsePageList(pt.s,reply.html,pt.path));
+        if(catName&&catName!=="最近更新")pk.items.forEach(function(x){if(!x.kind)x.kind=catName;});
+        return pk;
+      }).catch(function(e){return {host:pt.s.host,name:pt.s.name,error:e.message||"连接失败"};});
     });
     var apiJobs=apis.map(function(s){
       return apiListQuery(s.api,plan).then(function(q){
         return apiFetch(s.api,withPg(q,1),bypass).then(function(reply){
           return packApiSource(s,plan,JSON.parse(reply.json),withPg(q,1));});
-      }).catch(function(e){return {host:s.api,name:s.name,error:e.message||'接口连接失败'};});
+      }).catch(function(e){return {host:s.api,name:s.name,error:e.message||"接口连接失败"};});
     });
-    return Promise.all(pageJobs.concat(apiJobs)).then(function(results){if(run!==epoch)return;applyResults(results,false);if(!keepScroll)scroller.scrollTop=0;});
+    // 流式：单片源返回即合并展示（applyResults 内按标题去重不会重复），全部返回后给出最终汇总
+    var jobs=pageJobs.concat(apiJobs);
+    jobs.forEach(function(job){
+      job.then(function(pk){
+        if(run!==epoch)return;
+        applySource(pk,false);
+      }).catch(function(e){if(run!==epoch)return;});
+    });
+    return Promise.all(jobs).then(function(results){
+      if(run!==epoch)return;
+      var ok=results.filter(function(r){return !r.error;}).length;
+      applyResults(results.filter(function(r){return !r.error;}),false);
+      var diag=results.filter(function(r){return r.error;}).map(function(r){return r.name+"\uFF1A"+r.error;});
+      if(ok===0&&!allItems.length)status("来源没有返回片单，可能无结果或页面结构已变化"+(diag.length?"\uFF1B"+diag.join("\uFF1B"):""));
+      else status(statusFor()+(ok>1?" · "+ok+"源":"")+(diag.length?" · "+diag.join("\uFF1B"):""));
+      if(!keepScroll)scroller.scrollTop=0;
+    });
   }
   // 一页 10 个：目标页不满 10 个时自动向各片源补取，直到凑满或没有更多。
   function gotoPage(target){

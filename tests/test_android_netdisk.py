@@ -18,7 +18,7 @@ b.run([adb,'-s',SERIAL,'install','--no-incremental','-r',WORK/'test.apk'])
 b.run([adb,'-s',SERIAL,'shell','am','force-stop','com.seagull.tv'])
 if '--fresh' in sys.argv[2:]:b.run([adb,'-s',SERIAL,'shell','pm','clear','com.seagull.tv'])
 name=sys.argv[1]if len(sys.argv)>1 else 'NetdiskInstrumentation'
-assert name in ('NetdiskInstrumentation','PrivacyInstrumentation','BookmarkInstrumentation','VodInstrumentation','Vod4kvmInstrumentation','VodDuanjuInstrumentation','VodAutoNextInstrumentation','MusicInstrumentation','MusicLyricsInstrumentation','VodCoverInstrumentation','MusicBackgroundInstrumentation','ParallelPlayInstrumentation','PlayerGestureInstrumentation')
+assert name in ('NetdiskInstrumentation','PrivacyInstrumentation','BookmarkInstrumentation','VodInstrumentation','Vod4kvmInstrumentation','VodDuanjuInstrumentation','VodAutoNextInstrumentation','MusicInstrumentation','MusicLyricsInstrumentation','VodCoverInstrumentation','MusicBackgroundInstrumentation','ParallelPlayInstrumentation','KvmProbeInstrumentation','PlayerGestureInstrumentation')
 r=subprocess.run([str(adb),'-s',SERIAL,'shell','am','instrument','-w','com.seagull.tv.tests/.'+name],capture_output=True,timeout=420)
 text=r.stdout.decode('utf-8','replace');print(text);assert 'PASS:'in text and 'FAIL:'not in text,text+r.stderr.decode('utf-8','replace')
 

@@ -18,7 +18,7 @@ const root = path.resolve(__dirname, '..');
     startCheck:()=>calls.push('check'),applyUpdate:()=>calls.push('apply'),applyWifiUpdate:()=>calls.push('wifiApply')
    };
   });
-  const page=await context.newPage(); const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const page=await context.newPage(); const errors=[];page.on('pageerror',e=>{const st=(e.stack||e.message).split(String.fromCharCode(10)).slice(0,4).join(' | ');errors.push(st);console.log('PAGEERR',st);});
   await page.goto('http://127.0.0.1:8138/');
   for(const width of [320,390,768,1280]){
    await page.setViewportSize({width,height:844});
