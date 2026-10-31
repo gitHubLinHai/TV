@@ -1,0 +1,10 @@
+{
+  "appId": "com.seagull.tv",
+  "versionCode": 131,
+  "versionName": "1.0.31",
+  "minShellVersion": 15,
+  "wgt": "TV-v1.0.31.wgt",
+  "wgtSize": 58944,
+  "wgtSha256": "7f0c2858e7cccf5099f00d4ce985b1a3862faa76c021a35bf1152466b607d9fd",
+  "notes": "热更链路打通发布；壳版本过低时明确提示需安装新版 APK"
+}
