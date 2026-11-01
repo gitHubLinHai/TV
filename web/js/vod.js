@@ -127,14 +127,17 @@
       var card=button('',function(){openDetail(item);},'vod-card'+(kind?' kind-'+KIND_CLASS[kind]:''));var cover=document.createElement('div');cover.className='vod-cover';cover.textContent='暂无封面';
       if(item.cover){cover.textContent='';var img=document.createElement('img');img.alt='';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';
         var stage=0;
-        var giveUp=function(){if(img.parentNode)img.remove();cover.textContent='封面暂不可用';};
+        var giveUp=function(){ // 不用 textContext 赋值：会清掉封面容器里后追加的类型徽标
+          if(img.parentNode)img.remove();
+          if(!cover.querySelector('.cov-ph')){var ph=document.createElement('span');ph.className='cov-ph';ph.textContent='封面暂不可用';cover.insertBefore(ph,cover.firstChild);}
+        };
         var nextSource=function(){ // 直链图床(轮换域名,部分网络不可达)失败→原始代理地址→占位
           if(stage===0&&item.coverRaw&&item.coverRaw!==item.cover){stage=1;img.src=item.coverRaw;return true;}
           giveUp();return false;
         };
         img.addEventListener('error',function(){nextSource();});
-        img.addEventListener('load',function(){ // 代理对部分图床只回 1×1 空白 GIF（不触发 onerror）
-          if(img.naturalWidth<=1){if(!nextSource())giveUp();}
+        img.addEventListener('load',function(){ // 百度代理对部分图床只回 1×1 空白 GIF（不触发 onerror）；data: 占位图除外
+          if(img.src.indexOf('data:')!==0&&img.naturalWidth<=1){if(!nextSource())giveUp();}
         });
         img.src=item.cover;cover.appendChild(img);}
       if(kind){var badge=document.createElement('span');badge.className='type-badge badge-'+(KIND_CLASS[kind]||'misc');badge.textContent=kind;cover.appendChild(badge);}card.appendChild(cover);

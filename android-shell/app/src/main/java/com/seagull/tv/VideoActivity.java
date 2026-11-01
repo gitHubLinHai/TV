@@ -197,47 +197,61 @@ public final class VideoActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (privateMode) getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         getWindow().getDecorView().setSystemUiVisibility(5894);
-        // 全屏画面 + 悬浮控制层：视频区域始终占满整窗，控制条叠加其上，不再挤压画面。
+        // 全屏画面 + 悬浮控制层（爱奇艺式）：上下渐变横幅、扁平图标按钮、纤细进度条。
         FrameLayout root=new FrameLayout(this);root.setBackgroundColor(0xff000000);
         frame=new FrameLayout(this);frame.setClipChildren(true);
         surface=new TextureView(this);frame.addView(surface,new FrameLayout.LayoutParams(-1,-1));
         subtitles=new SubtitleView(this);subtitles.setBottomPaddingFraction(subOffset);
         frame.addView(subtitles,new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM));
         root.addView(frame,new FrameLayout.LayoutParams(-1,-1));
-        int pad=(int)(10*getResources().getDisplayMetrics().density);
-        topBar=new LinearLayout(this);topBar.setOrientation(LinearLayout.VERTICAL);topBar.setBackgroundColor(0x66000000);
+        int pad=(int)(12*getResources().getDisplayMetrics().density);
+        android.graphics.drawable.GradientDrawable topGrad=new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,new int[]{0xb3000000,0x00000000});
+        topBar=new LinearLayout(this);topBar.setOrientation(LinearLayout.VERTICAL);topBar.setPadding(pad,pad,pad,pad);topBar.setBackground(topGrad);
         title = label("‹  " + getIntent().getStringExtra("title") + (privateMode ? " · 无痕" : ""));
+        title.setTextSize(15);title.setTextColor(0xffffffff);title.setTypeface(title.getTypeface(),android.graphics.Typeface.BOLD);
+        title.setPadding(0,0,0,pad/3);
         title.setOnClickListener(v -> finish()); topBar.addView(title);
-        status = label("正在连接，预缓冲后播放…"); topBar.addView(status);
+        status = label("正在连接，预缓冲后播放…");status.setPadding(0,0,0,pad/2);
+        topBar.addView(status);
         root.addView(topBar,new FrameLayout.LayoutParams(-1,-2,Gravity.TOP));
-        bottomBar=new LinearLayout(this);bottomBar.setOrientation(LinearLayout.VERTICAL);bottomBar.setBackgroundColor(0x66000000);bottomBar.setPadding(0,0,0,pad/2);
+        android.graphics.drawable.GradientDrawable bottomGrad=new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,new int[]{0x00000000,0xd9000000});
+        bottomBar=new LinearLayout(this);bottomBar.setOrientation(LinearLayout.VERTICAL);bottomBar.setBackground(bottomGrad);bottomBar.setPadding(pad,pad/2,pad,pad*3/4);
         LinearLayout controls=new LinearLayout(this);controls.setGravity(Gravity.CENTER_VERTICAL);
-        play = new Button(this); play.setText("暂停"); controls.addView(play);
-        seek = new SeekBar(this); seek.setMax(1000); controls.addView(seek,new LinearLayout.LayoutParams(0,-2,1));
-        time = label("00:00 / 00:00"); controls.addView(time);
+        play = flat("⏸",18); controls.addView(play);
+        controls.addView(space(pad/2));
+        seek = new SeekBar(this); seek.setMax(1000);
+        seek.setProgressTintList(android.content.res.ColorStateList.valueOf(0xffa3e635));
+        seek.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(0x66ffffff));
+        seek.setThumbTintList(android.content.res.ColorStateList.valueOf(0xffffffff));
+        seek.setPadding(0,0,0,0);
+        controls.addView(seek,new LinearLayout.LayoutParams(0,-2,1));
+        controls.addView(space(pad/2));
+        time = label("00:00 / 00:00");time.setTypeface(android.graphics.Typeface.MONOSPACE); controls.addView(time);
         bottomBar.addView(controls);
         LinearLayout options=new LinearLayout(this);options.setGravity(Gravity.CENTER_VERTICAL);
-        Button scale=new Button(this);scale.setText("适应");options.addView(scale,new LinearLayout.LayoutParams(0,-2,1));
-        scale.setOnClickListener(v->{resetZoom();scaleMode=(scaleMode+1)%3;scale.setText(new String[]{"适应","拉伸铺满","裁剪铺满"}[scaleMode]);resizeVideo();});
-        Button speed=new Button(this);speed.setText("1.0×");options.addView(speed,new LinearLayout.LayoutParams(0,-2,1));
+        Button scale=flat("适应",12);options.addView(scale,new LinearLayout.LayoutParams(0,-2,1));
+        scale.setOnClickListener(v->{resetZoom();scaleMode=(scaleMode+1)%3;scale.setText(new String[]{"适应","拉伸","裁剪"}[scaleMode]);resizeVideo();});
+        Button speed=flat("1.0×",12);options.addView(speed,new LinearLayout.LayoutParams(0,-2,1));
         speed.setOnClickListener(v->{final String[] labels={"0.5×","0.75×","1.0×","1.25×","1.5×","2.0×","3.0×"};final float[] rates={.5f,.75f,1f,1.25f,1.5f,2f,3f};
             optionsDialog=new android.app.AlertDialog.Builder(this).setTitle("播放速度").setItems(labels,(d,w)->{video.setPlaybackSpeed(rates[w]);speed.setText(labels[w]);}).show();});
-        Button orientation=new Button(this);orientation.setText("屏幕方向");options.addView(orientation,new LinearLayout.LayoutParams(0,-2,1));
+        Button orientation=flat("方向",12);options.addView(orientation,new LinearLayout.LayoutParams(0,-2,1));
         orientation.setOnClickListener(v->optionsDialog=new android.app.AlertDialog.Builder(this).setTitle("屏幕方向").setItems(new String[]{"跟随系统","锁定横屏","锁定竖屏"},(d,w)->{
-            setRequestedOrientation(new int[]{android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE,android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT}[w]);orientation.setText(new String[]{"屏幕方向","横屏已锁","竖屏已锁"}[w]);}).show());
+            setRequestedOrientation(new int[]{android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE,android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT}[w]);orientation.setText(new String[]{"方向","横屏","竖屏"}[w]);}).show());
         // 字幕偏移：检测到字幕轨才出现，调整字幕距底部的位置（记忆偏好）。
         subButtons=new LinearLayout(this);subButtons.setGravity(Gravity.CENTER_VERTICAL);subButtons.setVisibility(View.GONE);
-        Button subUp=new Button(this);subUp.setText("字幕↑");subButtons.addView(subUp,new LinearLayout.LayoutParams(0,-2,1));
-        Button subDown=new Button(this);subDown.setText("字幕↓");subButtons.addView(subDown,new LinearLayout.LayoutParams(0,-2,1));
+        Button subUp=flat("字幕↑",12);subButtons.addView(subUp,new LinearLayout.LayoutParams(0,-2,1));
+        Button subDown=flat("字幕↓",12);subButtons.addView(subDown,new LinearLayout.LayoutParams(0,-2,1));
         subUp.setOnClickListener(v->moveSub(0.04f));subDown.setOnClickListener(v->moveSub(-0.04f));
         options.addView(subButtons,new LinearLayout.LayoutParams(0,-2,2));
         // 歌词同步微调：跨音源版本时长有差异（酷狗版/现场版配网易歌词），词快词慢各调 0.3 秒，偏好记忆。
         lyricButtons=new LinearLayout(this);lyricButtons.setGravity(Gravity.CENTER_VERTICAL);lyricButtons.setVisibility(View.GONE);
-        Button lyricEarly=new Button(this);lyricEarly.setText("词早");lyricButtons.addView(lyricEarly,new LinearLayout.LayoutParams(0,-2,1));
-        Button lyricLate=new Button(this);lyricLate.setText("词晚");lyricButtons.addView(lyricLate,new LinearLayout.LayoutParams(0,-2,1));
+        Button lyricEarly=flat("词早",12);lyricButtons.addView(lyricEarly,new LinearLayout.LayoutParams(0,-2,1));
+        Button lyricLate=flat("词晚",12);lyricButtons.addView(lyricLate,new LinearLayout.LayoutParams(0,-2,1));
         lyricEarly.setOnClickListener(v->nudgeLyrics(300));lyricLate.setOnClickListener(v->nudgeLyrics(-300));
         options.addView(lyricButtons,new LinearLayout.LayoutParams(0,-2,2));
-        Button fullscreen=new Button(this);fullscreen.setText("全屏");options.addView(fullscreen,new LinearLayout.LayoutParams(0,-2,1));
+        Button fullscreen=flat("⛶",16);options.addView(fullscreen,new LinearLayout.LayoutParams(0,-2,1));
         fullscreen.setOnClickListener(v->{hideControls();scheduleHide();});
         bottomBar.addView(options);
         root.addView(bottomBar,new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM));
@@ -359,7 +373,7 @@ public final class VideoActivity extends Activity {
                 }
             }
             @Override public void onIsPlayingChanged(boolean value) {
-                play.setText(value ? "暂停" : "播放");
+                play.setText(value ? "⏸" : "▶");
                 if(value)scheduleHide();else{handler.removeCallbacks(hideRun);showControls();}
             }
             @Override public void onVideoSizeChanged(VideoSize size) {
@@ -400,7 +414,16 @@ public final class VideoActivity extends Activity {
             handler.postDelayed(this,500);
         }});
     }
-    private TextView label(String text){TextView view=new TextView(this);view.setText(text);view.setTextColor(0xffdddddd);view.setTextSize(12);int p=(int)(12*getResources().getDisplayMetrics().density);view.setPadding(p,p,p,p);view.setSaveEnabled(false);return view;}
+    private TextView label(String text){TextView view=new TextView(this);view.setText(text);view.setTextColor(0xccdddddd);view.setTextSize(12);int p=(int)(12*getResources().getDisplayMetrics().density);view.setPadding(0,p/4,0,p/4);view.setSaveEnabled(false);return view;}
+    /** 爱奇艺式扁平按钮：无系统按钮底色，纯白文字/图标。 */
+    private Button flat(String text,float sizeSp){
+        Button b=new Button(this);
+        b.setText(text);b.setTextColor(0xffffffff);b.setTextSize(sizeSp);
+        b.setAllCaps(false);b.setPadding(0,0,0,0);
+        b.setBackgroundColor(0x00000000);b.setMinimumHeight(0);b.setMinimumWidth(0);
+        return b;
+    }
+    private android.view.View space(int px){android.view.View v=new android.view.View(this);v.setLayoutParams(new LinearLayout.LayoutParams(px,1));return v;}
     private String clock(long ms){long sec=Math.max(0,ms/1000);return String.format(java.util.Locale.ROOT,"%02d:%02d",sec/60,sec%60);}
     @Override protected void onResume() { resumed = true; super.onResume(); }
     @Override protected void onPause() {

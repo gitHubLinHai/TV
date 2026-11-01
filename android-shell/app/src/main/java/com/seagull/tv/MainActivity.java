@@ -47,7 +47,7 @@ public class MainActivity extends Activity {
     private static final String API_RELEASE = "https://api.github.com/repos/gitHubLinHai/TV/contents/release/";
 
     private static final String ORIGIN = "https://app.tv.local/";
-    private static final int SHELL_VERSION = 26;
+    private static final int SHELL_VERSION = 27;
     private final ExecutorService vodPool = Executors.newFixedThreadPool(2);
     private final ExecutorService netdiskPool = Executors.newFixedThreadPool(3);
     private static final AtomicBoolean UPDATING = new AtomicBoolean();
