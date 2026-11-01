@@ -1,14 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 150,
-  "versionName": "1.0.50",
+  "versionCode": 151,
+  "versionName": "1.0.51",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.50.wgt",
-  "wgtSize": 61503,
-  "wgtSha256": "3709d2ad4d4570f8d6196abf6cd68b706b606a36a2e370715ce76127b4e170d2",
-  "notes": "更新顺序优化：APK 与网页资源都待更新时 APK 优先（新 APK 已含最新网页资源，一步到位，失败可退回热更）；歌词对齐支持 [offset] 标签并新增词早/词晚微调；封面三级兜底（直连→代理→占位）",
-  "apk": "TV-v1.0.50.apk",
-  "apkCode": 150,
+  "wgt": "TV-v1.0.51.wgt",
+  "wgtSize": 62338,
+  "wgtSha256": "32414b42f5f5f1f6c7f6b58280b4f2973c92918619b5f79e39cfdd5e3899d42a",
+  "notes": "播放器控制层爱奇艺式改版（渐变横幅+扁平图标按钮+纤细进度条）；音乐页酷狗风改版（深蓝渐变、白色选中胶囊、正在播放卡与律动动画）",
+  "apk": "TV-v1.0.51.apk",
+  "apkCode": 151,
   "apkSize": 3474098,
-  "apkSha256": "8f475e0b01019b612080f8503b549aee0049a31feb9b73c5756552b13880574b"
+  "apkSha256": "60bcb0e18a492e7ffdaade9ac4adeda2d32d82b03725267c241248c93d78bc9a"
 }
