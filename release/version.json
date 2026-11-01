@@ -1,14 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 148,
-  "versionName": "1.0.48",
+  "versionCode": 149,
+  "versionName": "1.0.49",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.48.wgt",
-  "wgtSize": 61283,
-  "wgtSha256": "2be06c2d6a5460fd86ef36d8be632645be6618bf32846104941c6e0e75b6fcf5",
-  "notes": "音乐页修复：榜单与音源选择状态正确高亮（酷狗此前不亮、榜单从未高亮），三组选择行加标签分组、样式精修",
-  "apk": "TV-v1.0.47.apk",
-  "apkCode": 147,
+  "wgt": "TV-v1.0.49.wgt",
+  "wgtSize": 61286,
+  "wgtSha256": "88a1ca5d770714b36c0809d6a32948608782b5ef6cfe6f8edcebf5be19c0d60c",
+  "notes": "修复音乐后台闪退：保活服务前台化被拒时降级不再崩溃；后台播完歌不再 12 秒收尾（保持原地换曲，避开后台启动前台服务限制）；崩溃摘要显示 Caused by 根因",
+  "apk": "TV-v1.0.49.apk",
+  "apkCode": 149,
   "apkSize": 3470002,
-  "apkSha256": "465e5a2d01fba34e93150c20bdc506a946f5f9701e5b104a9811cdc6b9be831e"
+  "apkSha256": "18513868bb8bdfd0bd6b1d8151e4c7fbaef39f8c8ff496b17c275842c7e8be73"
 }
