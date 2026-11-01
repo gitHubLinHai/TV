@@ -5,10 +5,10 @@
   "minShellVersion": 15,
   "wgt": "TV-v1.0.46.wgt",
   "wgtSize": 60909,
-  "wgtSha256": "947917a86293313c59dc3428689b2066fdbfb307c30469af90a85db11a90489a",
-  "notes": "修复 APK 应用内更新失败（下载新增 api.github.com 兜底通道）；短剧分类跟随片源站改为 126",
+  "wgtSha256": "2a19420659a8827b60d54af2c2ddb065d6fae9c28185f7e03ca05207132e3521",
+  "notes": "修复 APK 应用内更新失败：FileProvider 安装路径越界 + 下载新增 api.github.com 兜底；短剧分类改为 126",
   "apk": "TV-v1.0.46.apk",
   "apkCode": 146,
   "apkSize": 3470002,
-  "apkSha256": "366b49edec5669a3c544e56ab488b298ba22d5ae5257c96da038adbad5679c17"
+  "apkSha256": "7e95cca444f39c449c0ec9fb67b4ca26caae4dfb9ebfa2af5d052f2b4daaed08"
 }
