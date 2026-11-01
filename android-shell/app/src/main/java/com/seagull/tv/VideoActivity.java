@@ -41,10 +41,11 @@ public final class VideoActivity extends Activity {
     private FrameLayout frame;
     private TextureView surface;
     private SubtitleView subtitles;
-    private LinearLayout topBar, bottomBar, subButtons;
+    private LinearLayout topBar, bottomBar, subButtons, lyricButtons;
     private float aspect = 16f/9f;
     private int scaleMode;
     private float zoom = 1f, panX, panY, subOffset = 0.08f;
+    private long lyricOffsetMs;
     private long[] lyricTimes; private String[] lyricTexts; private TextView[] lyricRows; private int lyricIndex = -2;
     private android.app.AlertDialog optionsDialog, errorDialog;
     private void resizeVideo() {
@@ -77,7 +78,14 @@ public final class VideoActivity extends Activity {
         try{
             java.util.ArrayList<Long> times=new java.util.ArrayList<>();java.util.ArrayList<String> texts=new java.util.ArrayList<>();
             java.util.regex.Pattern p=java.util.regex.Pattern.compile("\\[(\\d{1,2}):(\\d{1,2})(?:[.:](\\d{1,3}))?\\]");
+            java.util.regex.Pattern offsetTag=java.util.regex.Pattern.compile("^\\[offset:\\s*([+-]?\\d+)\\s*]", java.util.regex.Pattern.CASE_INSENSITIVE);
+            long offset=0;
             for(String line:raw.split("\n")){
+                java.util.regex.Matcher om=offsetTag.matcher(line);
+                if(om.find()){ // LRC 偏移标签：正值=歌词整体提前（此前被忽略导致部分歌词系统性错位）
+                    try{offset=Long.parseLong(om.group(1));}catch(NumberFormatException ignored){ }
+                    continue;
+                }
                 java.util.ArrayList<Long> stamps=new java.util.ArrayList<>();
                 java.util.regex.Matcher tag=p.matcher(line);
                 int last=0;
@@ -90,7 +98,7 @@ public final class VideoActivity extends Activity {
                 if(stamps.isEmpty())continue;
                 String text=line.substring(last).replace("\r","").trim();
                 if(text.isEmpty())continue;
-                for(long t:stamps){times.add(t);texts.add(text);}
+                for(long t:stamps){times.add(t-offset);texts.add(text);}
             }
             if(times.isEmpty())return false;
             Long[] order=new Long[times.size()];
@@ -104,6 +112,7 @@ public final class VideoActivity extends Activity {
     }
     private void buildLyrics(FrameLayout root,String raw){
         if(!parseLyrics(raw))return;
+        lyricButtons.setVisibility(View.VISIBLE);
         LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setGravity(Gravity.CENTER);
         lyricRows=new TextView[5];
         for(int r=0;r<5;r++){
@@ -115,6 +124,7 @@ public final class VideoActivity extends Activity {
     }
     private void updateLyrics(long pos){
         if(lyricTimes==null||lyricRows==null)return;
+        pos+=lyricOffsetMs; // 歌词同步偏移：正值=歌词整体提前
         int idx=lyricIndex;
         if(idx<0)idx=0;
         while(idx+1<lyricTimes.length&&lyricTimes[idx+1]<=pos)idx++;
@@ -129,6 +139,12 @@ public final class VideoActivity extends Activity {
             row.setTextSize(cur?20:14);
             row.setTextColor(cur?0xffffffff:(Math.abs(line-idx)==1?0xb3ffffff:0x66ffffff));
         }
+    }
+    private void nudgeLyrics(long delta){
+        lyricOffsetMs=Math.max(-10000,Math.min(10000,lyricOffsetMs+delta));
+        getSharedPreferences("tv_player",0).edit().putLong("lyricOffset",lyricOffsetMs).apply();
+        lyricIndex=-2;
+        showGestureHint("歌词同步 "+(lyricOffsetMs>=0?"+":"")+(lyricOffsetMs/1000f)+" 秒",900);
     }
     private void moveSub(float delta){
         subOffset=Math.max(0.02f,Math.min(0.45f,subOffset+delta));
@@ -177,6 +193,7 @@ public final class VideoActivity extends Activity {
             }
         }
         subOffset=getSharedPreferences("tv_player",0).getFloat("subOffset",0.08f);
+        lyricOffsetMs=getSharedPreferences("tv_player",0).getLong("lyricOffset",0);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (privateMode) getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         getWindow().getDecorView().setSystemUiVisibility(5894);
@@ -214,6 +231,12 @@ public final class VideoActivity extends Activity {
         Button subDown=new Button(this);subDown.setText("字幕↓");subButtons.addView(subDown,new LinearLayout.LayoutParams(0,-2,1));
         subUp.setOnClickListener(v->moveSub(0.04f));subDown.setOnClickListener(v->moveSub(-0.04f));
         options.addView(subButtons,new LinearLayout.LayoutParams(0,-2,2));
+        // 歌词同步微调：跨音源版本时长有差异（酷狗版/现场版配网易歌词），词快词慢各调 0.3 秒，偏好记忆。
+        lyricButtons=new LinearLayout(this);lyricButtons.setGravity(Gravity.CENTER_VERTICAL);lyricButtons.setVisibility(View.GONE);
+        Button lyricEarly=new Button(this);lyricEarly.setText("词早");lyricButtons.addView(lyricEarly,new LinearLayout.LayoutParams(0,-2,1));
+        Button lyricLate=new Button(this);lyricLate.setText("词晚");lyricButtons.addView(lyricLate,new LinearLayout.LayoutParams(0,-2,1));
+        lyricEarly.setOnClickListener(v->nudgeLyrics(300));lyricLate.setOnClickListener(v->nudgeLyrics(-300));
+        options.addView(lyricButtons,new LinearLayout.LayoutParams(0,-2,2));
         Button fullscreen=new Button(this);fullscreen.setText("全屏");options.addView(fullscreen,new LinearLayout.LayoutParams(0,-2,1));
         fullscreen.setOnClickListener(v->{hideControls();scheduleHide();});
         bottomBar.addView(options);
@@ -410,8 +433,9 @@ public final class VideoActivity extends Activity {
         title.setText("‹  "+songTitle+(privateMode?" · 无痕":""));
         if(lyrics!=null&&lyrics.length()>4&&parseLyrics(lyrics)){
             lyricIndex=-2;
+            if(lyricButtons!=null)lyricButtons.setVisibility(View.VISIBLE);
             if(lyricRows!=null)for(TextView r:lyricRows)r.setText("");
-        }
+        } else if(lyricButtons!=null) lyricButtons.setVisibility(View.GONE);
         status.setText("正在播放…");
         video.setMediaItem(MediaItem.fromUri(url));
         video.prepare();video.play();

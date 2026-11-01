@@ -235,3 +235,12 @@
 3. 崩溃摘要升级：外层包装异常会吃掉 200 字符预算导致根因不可见（本次用户报文即被截断在 cmp=c），改为"异常行 + Caused by 根因行 + com.seagull.tv 栈帧"三段提取；模拟验证可完整显示 ForegroundServiceStartNotAllowedException 根因。
 4. 压力测试假阴性：网易 30 秒试听触发同曲自动换源（key 不变、swapGen 递增），以"key 变化"判定推进会误报失败——改用 swapGen 递增+位置推进判定后 6 轮全过（同曲换源/跨曲推进/后台混合均覆盖）。Music/MusicBackground/MusicLyrics/PlayerGesture 全绿。
 5. 附带修复：tests/test_android_netdisk.py 白名单行在探针清理时残留孤立引号导致 SyntaxError。
+
+
+补充（第三十轮）：更新顺序/歌词对齐/封面兜底（v1.0.50 / 壳 26）
+1. 更新顺序（用户提议采纳）：WGT 与 APK 都待更新时改为 APK 优先——新 APK 已打包最新网页资源，装完一步到位（此前先热更网页再更 APK 是两步）；APK 更新失败时面板出现"改为仅更新网页资源"退回热更。诊断包 E2E 实测：foundapk+bundled 文案("一步到位")→下载→installready→安装器拉起全链路通过。仅网页更新时仍走无缝热更不变。
+2. APK 下载提速：fastly.jsdelivr 对 .apk 一律 301 到 raw（国内被墙），APK 下载基址把 fastly 挪到最后，不再白等一轮超时。
+3. 歌词对不齐（两项）：① parseLyrics 此前忽略 LRC [offset:±ms] 标签，带此标签的歌词整体错位——已支持（正值=提前）；② 跨音源版本时长差异（酷狗版/现场版配网易歌词）本质无解，播放页音乐模式新增"词早/词晚"按钮（各 0.3 秒步进，±10 秒上限，偏好记忆 tv_player/lyricOffset），即时刷新当前行。
+4. 封面兜底：模拟器实测 10/10 封面正常（直连 ii97efd2.com 轮换图床），用户端"全没有"判断为运营商网络访问图床域名失败。加三级链：直连失败→原始代理地址重试→优雅占位（含 1×1 空白 GIF 检测）；parseList 保留 coverRaw 原始地址。
+5. "电影有时候刷不出"：555/4KVM 响应慢（1-12 秒）+多源诊断已就绪，本轮插桩片单/搜索/播放全过，属上游间歇性；重试按钮可恢复。
+6. 网盘分享源本轮验证时 3 条全失效（活站点轮换），test_share_validation_live 抖动重试范畴。

@@ -21,20 +21,31 @@ public class UpdateE2EInstrumentation extends NetdiskInstrumentation {
  @Override public void onStart(){Bundle result=new Bundle();try{
   Intent i=new Intent();i.setClassName("com.seagull.tv","com.seagull.tv.MainActivity");i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
   Activity home=startActivitySync(i);WebView web=(WebView)field(home,"web");awaitUI(web,"v1.0.45");
-  // 阶段一：WGT 热更（wifi 自动开始，否则手动点按钮）
-  waitTitle(web,"发现新版本",60000);
-  long end=System.currentTimeMillis()+120000;
+  // 阶段一（顺序随壳版本而异）：旧壳先 WGT 热更；1.0.50+ 壳双待更新时直接 APK 优先（bundled）。
+  long end=System.currentTimeMillis()+60000;
   while(System.currentTimeMillis()<end){
-   if("true".equals(eval(web,"!document.getElementById('update-apply').hidden")))eval(web,"document.getElementById('update-apply').click();true");
    String t=title(web);
-   if(t!=null&&t.contains("更新完成"))break;
-   Thread.sleep(400);
+   if(t!=null&&(t.contains("发现新版本")||t.contains("发现新版 APK")))break;
+   Thread.sleep(300);
   }
-  waitTitle(web,"更新完成",1000);
-  Thread.sleep(2500); // reloadHome 后新版首页就绪并自动静默检查
+  boolean apkFirst=title(web)!=null&&title(web).contains("发现新版 APK");
+  String bundledNote="no";
+  if(!apkFirst){
+   end=System.currentTimeMillis()+120000;
+   while(System.currentTimeMillis()<end){
+    if("true".equals(eval(web,"!document.getElementById('update-apply').hidden")))eval(web,"document.getElementById('update-apply').click();true");
+    String t=title(web);
+    if(t!=null&&t.contains("更新完成"))break;
+    Thread.sleep(400);
+   }
+   waitTitle(web,"更新完成",1000);
+   Thread.sleep(2500); // reloadHome 后新版首页就绪并自动静默检查
+   waitTitle(web,"发现新版 APK",90000);
+  } else {
+   bundledNote=eval(web,"document.getElementById('update-detail').textContent").contains("一步到位")?"yes":"missing";
+  }
   // 阶段二：APK 应用内更新。旧壳（≤1.0.45）带已知 FileProvider 缺陷：下载校验成功后拉起安装器时
   // 越界报 "length=42; index=43"——此结果也算通过（缺陷已在 1.0.46 修复并由诊断包 E2E 验证）。
-  waitTitle(web,"发现新版 APK",90000);
   end=System.currentTimeMillis()+180000;
   ActivityMonitor monitor=addMonitor("com.android.packageinstaller.PackageInstallerActivity",null,false);
   ActivityMonitor anyView=addMonitor(new IntentFilter(Intent.ACTION_VIEW),null,false);
@@ -56,6 +67,6 @@ public class UpdateE2EInstrumentation extends NetdiskInstrumentation {
   }
   Activity installer=waitForMonitorWithTimeout(monitor,8000);
   Activity viewHit=waitForMonitorWithTimeout(anyView,1000);
-  result.putString("stream","PASS: E2E 45->web hot update OK; APK update concluded as "+outcome+(installer!=null?", installer monitor exact hit":viewHit!=null?", view-intent hit":"")+".\n");finish(Activity.RESULT_OK,result);
+  result.putString("stream","PASS: E2E "+(apkFirst?"apk-first(bundled note "+bundledNote+")":"wgt-then-apk")+"; APK update concluded as "+outcome+(installer!=null?", installer monitor exact hit":viewHit!=null?", view-intent hit":"")+".\n");finish(Activity.RESULT_OK,result);
  }catch(Throwable e){result.putString("stream","FAIL: "+e+"\n");finish(Activity.RESULT_CANCELED,result);}}
 }

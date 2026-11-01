@@ -78,6 +78,7 @@
     busy = true; pending = false; window.__updateStatus({ state: 'checking' }); bridge.startCheck('unused');
   }
   var apkPending = false;
+  var apkBundled = false; // 新 APK 已打包本次网页资源：装完一步到位；失败可退回仅热更
   function apply(wifiOnly) {
     if (busy || !pending) return;
     busy = true; pending = false;
@@ -94,12 +95,12 @@
     if (s.state === 'checking') { $('update-title').textContent = '正在检查更新'; $('update-detail').textContent = '并行检查版本，保留本地使用记录。'; }
     else if (s.state === 'found') {
       quietCheck = false;
-      busy = false; pending = true; apkPending = false; $('update-title').textContent = '发现新版本 ' + s.version; $('update-detail').textContent = s.notes || '资源更新';
+      busy = false; pending = true; apkPending = false; apkBundled = false; $('update-title').textContent = '发现新版本 ' + s.version; $('update-detail').textContent = s.notes || '资源更新';
       if (bridge.networkType() === 'wifi') apply(true); else { $('update-detail').textContent += ' · 等待 Wi-Fi，或手动下载。'; $('update-apply').hidden = false; }
     } else if (s.state === 'foundapk') {
       quietCheck = false;
-      busy = false; pending = true; apkPending = true; $('update-title').textContent = '发现新版 APK ' + s.version;
-      $('update-detail').textContent = (s.notes || '包含新的原生功能') + ' · 下载后需在系统弹窗点“安装”。';
+      busy = false; pending = true; apkPending = true; apkBundled = !!s.bundled; $('update-title').textContent = '发现新版 APK ' + s.version;
+      $('update-detail').textContent = (s.notes || '包含新的原生功能') + (apkBundled ? ' · 新 APK 已包含本次网页资源，安装后一步到位。' : ' · 下载后需在系统弹窗点“安装”。');
       $('update-apply').hidden = false; $('update-apply').textContent = '下载并安装';
     } else if (s.state === 'downloadingapk') {
       busy = true; var pk = Math.max(0, Math.min(1, Number(s.progress) || 0));
@@ -124,6 +125,7 @@
       $('update-detail').textContent = s.notes || '热更装不下该版本的原生改动，请覆盖安装最新 APK 后再检查更新。';
     } else if (s.state === 'error') {
       busy = false; pending = false; retryAt = Date.now() + 60000; $('update-title').textContent = '本次更新未完成'; $('update-detail').textContent = s.msg || '请稍后重试，当前版本仍可使用。';
+      if (apkBundled) { pending = true; apkPending = false; $('update-apply').hidden = false; $('update-apply').textContent = '改为仅更新网页资源'; }
     }
   };
   function showPrivacy() {

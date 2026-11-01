@@ -55,7 +55,7 @@
         if(!/^\/voddetail\/\d+\.html$/.test(target)||seen[target])return;
         var box=a.closest('.module-card-item')||a,img=box.querySelector('vod-img'),title=a.getAttribute('title')||text(box.querySelector('.module-poster-item-title,.module-item-title,.module-card-item-title'))||(img&&img.getAttribute('alt'));
         if(!title)return;var cover=img&&(img.getAttribute('data-original')||img.getAttribute('data-src')||img.getAttribute('src'))||a.getAttribute('data-bg')||'';
-        seen[target]=true;list.push({path:target,title:title.slice(0,200),cover:resource(cover),note:text(box.querySelector('.module-item-note')).slice(0,100)});
+        seen[target]=true;list.push({path:target,title:title.slice(0,200),cover:resource(cover),coverRaw:/^https:\/\//.test(cover)?cover:'',note:text(box.querySelector('.module-item-note')).slice(0,100)});
       });
       var nextNode=Array.from(doc.querySelectorAll('a.page-next')).filter(function(a){return a.getAttribute('title')==='下一页'||text(a)==='下一页';})[0],nextPath='';
       if(nextNode)try{nextPath=sitePath(nextNode.getAttribute('href'));}catch(e){}

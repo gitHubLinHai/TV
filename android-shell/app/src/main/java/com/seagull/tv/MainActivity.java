@@ -47,7 +47,7 @@ public class MainActivity extends Activity {
     private static final String API_RELEASE = "https://api.github.com/repos/gitHubLinHai/TV/contents/release/";
 
     private static final String ORIGIN = "https://app.tv.local/";
-    private static final int SHELL_VERSION = 25;
+    private static final int SHELL_VERSION = 26;
     private final ExecutorService vodPool = Executors.newFixedThreadPool(2);
     private final ExecutorService netdiskPool = Executors.newFixedThreadPool(3);
     private static final AtomicBoolean UPDATING = new AtomicBoolean();
@@ -490,7 +490,11 @@ public class MainActivity extends Activity {
                         boolean wgtApplicable = next > activeCode() && remote.optInt("minShellVersion", 1) <= SHELL_VERSION;
                         boolean apkNewer = remote.optInt("apkCode", 0) > packageVersionCode() && remote.optLong("apkSize", 0) > 0;
                         // 网页层可热更：优先走 WGT；装不下/已同步时若远端 APK 更新，则提供应用内下载安装。
-                        if (wgtApplicable) {
+                        // 双更新都待处理时 APK 优先：新 APK 已打包最新网页资源，安装一步到位（失败可退回热更）。
+                        if (apkNewer && wgtApplicable) {
+                            o.put("state", "foundapk");
+                            o.put("bundled", true);
+                        } else if (wgtApplicable) {
                             o.put("state", "found");
                         } else if (apkNewer) {
                             o.put("state", "foundapk");
@@ -550,7 +554,7 @@ public class MainActivity extends Activity {
                     if (remote.optInt("apkCode", 0) <= packageVersionCode()) { cbError(cb, "当前 APK 已是最新"); return; }
                     Exception failure = null;
                     boolean downloaded = false;
-                    for (String base : updateBases(remote)) {
+                    for (String base : updateBases(remote, true)) {
                         try {
                             final String url = base + apkName;
                             UpdateDownload.fetch(new URL(url), archive, size, hash,
@@ -643,7 +647,7 @@ public class MainActivity extends Activity {
             long expectedSize = remote.optLong("wgtSize", 0);
             String expectedHash = remote.optString("wgtSha256", "");
             Exception failure = null;
-            for (String base : updateBases(remote)) {
+            for (String base : updateBases(remote, false)) {
                 if (wifiOnly && !wifi.equals(wifiNetwork())) throw new java.io.IOException("Wi-Fi 已断开，等待重连后重试");
                 deleteRecursive(tmp);
                 if (!tmp.mkdirs()) throw new java.io.IOException("无法创建更新目录，请检查存储空间");
@@ -674,12 +678,17 @@ public class MainActivity extends Activity {
             throw new java.io.IOException("所有更新包下载源均失败，当前版本已保留，请稍后重试", failure);
         }
 
-        /** 更新包下载基址：带回清单的源优先，其后各 CDN，最后 api.github.com 兜底（不支持断点续传时会自动整包重下）。 */
-        private List<String> updateBases(JSONObject remote) {
+        /** 更新包下载基址：带回清单的源优先，其后各 CDN，最后 api.github.com 兜底（不支持断点续传时会自动整包重下）。
+         *  APK 下载把 fastly 挪到最后：它对 .apk 一律 301 到 raw 域名，先试它只会白白多等一次超时。 */
+        private List<String> updateBases(JSONObject remote, boolean forApk) {
             List<String> bases = new ArrayList<>();
             bases.add(remote.optString("_base", CDNS[0]));
             for (String base : CDNS) if (!bases.contains(base)) bases.add(base);
             if (!bases.contains(API_RELEASE)) bases.add(API_RELEASE);
+            if (forApk) {
+                String fastly = CDNS[0];
+                if (bases.remove(fastly)) bases.add(fastly);
+            }
             return bases;
         }
 
