@@ -1,14 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 149,
-  "versionName": "1.0.49",
+  "versionCode": 150,
+  "versionName": "1.0.50",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.49.wgt",
-  "wgtSize": 61286,
-  "wgtSha256": "88a1ca5d770714b36c0809d6a32948608782b5ef6cfe6f8edcebf5be19c0d60c",
-  "notes": "修复音乐后台闪退：保活服务前台化被拒时降级不再崩溃；后台播完歌不再 12 秒收尾（保持原地换曲，避开后台启动前台服务限制）；崩溃摘要显示 Caused by 根因",
-  "apk": "TV-v1.0.49.apk",
-  "apkCode": 149,
-  "apkSize": 3470002,
-  "apkSha256": "18513868bb8bdfd0bd6b1d8151e4c7fbaef39f8c8ff496b17c275842c7e8be73"
+  "wgt": "TV-v1.0.50.wgt",
+  "wgtSize": 61503,
+  "wgtSha256": "3709d2ad4d4570f8d6196abf6cd68b706b606a36a2e370715ce76127b4e170d2",
+  "notes": "更新顺序优化：APK 与网页资源都待更新时 APK 优先（新 APK 已含最新网页资源，一步到位，失败可退回热更）；歌词对齐支持 [offset] 标签并新增词早/词晚微调；封面三级兜底（直连→代理→占位）",
+  "apk": "TV-v1.0.50.apk",
+  "apkCode": 150,
+  "apkSize": 3474098,
+  "apkSha256": "8f475e0b01019b612080f8503b549aee0049a31feb9b73c5756552b13880574b"
 }
