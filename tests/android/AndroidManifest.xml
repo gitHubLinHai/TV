@@ -13,6 +13,6 @@
  <instrumentation android:name="com.seagull.tv.tests.MusicLyricsInstrumentation" android:targetPackage="com.seagull.tv"/>
  <instrumentation android:name="com.seagull.tv.tests.MusicBackgroundInstrumentation" android:targetPackage="com.seagull.tv"/>
  <instrumentation android:name="com.seagull.tv.tests.ParallelPlayInstrumentation" android:targetPackage="com.seagull.tv"/>
- <instrumentation android:name="com.seagull.tv.tests.PlayerGestureInstrumentation" android:targetPackage="com.seagull.tv"/><application android:hasCode="true"/>
- <instrumentation android:name="com.seagull.tv.tests.StateProbeInstrumentation" android:targetPackage="com.seagull.tv"/><application android:hasCode="true"/>
+ <instrumentation android:name="com.seagull.tv.tests.PlayerGestureInstrumentation" android:targetPackage="com.seagull.tv"/>
+ <instrumentation android:name="com.seagull.tv.tests.UpdateE2EInstrumentation" android:targetPackage="com.seagull.tv"/><application android:hasCode="true"/>
 </manifest>

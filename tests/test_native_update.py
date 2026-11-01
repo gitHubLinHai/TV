@@ -24,6 +24,7 @@ import com.seagull.tv.UpdateStorage;
 import com.seagull.tv.UpdateDownload;
 public class NativeUpdateTest { static final int SHELL_VERSION = 7;
     static String[] CDNS = {"https://one/", "https://two/", "https://three/"};
+    static String API_RELEASE = "https://api/";
     static volatile String[] replies;
     static CountDownLatch started;
     static String[] packageReplies;
@@ -74,7 +75,7 @@ public class NativeUpdateTest { static final int SHELL_VERSION = 7;
         packageReplies = new String[]{"404", "timeout", "corrupt"}; packageAttempts = 0;
         try { test.downloadUpdate(remote, archive, tmp, null, false, "cb"); throw new AssertionError("all sources failed"); }
         catch (IOException expected) { }
-        require(packageAttempts == 3, "try all download sources");
+        require(packageAttempts == 4, "try all download sources");
         Network wifi = new Network(); connectedWifi = wifi;
         UpdateDownload.discard(archive);
         packageReplies = new String[]{"dropwifi", "ok", "ok"}; packageAttempts = 0;
@@ -152,6 +153,7 @@ public class NativeUpdateTest { static final int SHELL_VERSION = 7;
                         if (url.getPath().endsWith(".wgt")) {
                             if (!counted) { packageAttempts++; counted = true; }
                             int index = Arrays.asList("one", "two", "three").indexOf(url.getHost());
+                            if (index < 0) return 404; // api.github.com 兜底源在夹具中按 404 计，只验证会被尝试
                             String reply = packageReplies[index];
                             if (reply.equals("timeout")) throw new SocketTimeoutException("fixture timeout");
                             if (reply.equals("404")) return 404;

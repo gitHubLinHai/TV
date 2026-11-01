@@ -43,8 +43,11 @@ public class MainActivity extends Activity {
             "https://raw.githubusercontent.com/gitHubLinHai/TV/main/release/"
     };
 
+    /** 更新包兜底源：jsDelivr 会把 APK 重定向到国内常被墙的 raw 域名，api.github.com 链路独立且通常可达。 */
+    private static final String API_RELEASE = "https://api.github.com/repos/gitHubLinHai/TV/contents/release/";
+
     private static final String ORIGIN = "https://app.tv.local/";
-    private static final int SHELL_VERSION = 22;
+    private static final int SHELL_VERSION = 23;
     private final ExecutorService vodPool = Executors.newFixedThreadPool(2);
     private final ExecutorService netdiskPool = Executors.newFixedThreadPool(3);
     private static final AtomicBoolean UPDATING = new AtomicBoolean();
@@ -510,7 +513,10 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void applyApkUpdate(final String cb) {
             if (!UPDATING.compareAndSet(false, true)) { cbError(cb, "正在更新，请稍后重试"); return; }
             new Thread(new Runnable() { public void run() {
-                File archive = new File(getFilesDir(), "update.apk");
+                // FileProvider 只授权 files/update/ 目录，APK 必须放在该子目录内。
+                File dir = new File(getFilesDir(), "update");
+                if (!dir.isDirectory() && !dir.mkdirs()) { cbError(cb, "无法创建更新目录"); return; }
+                File archive = new File(dir, "update.apk");
                 try {
                     JSONObject remote = recentUpdate;
                     if (remote == null || android.os.SystemClock.elapsedRealtime() - recentAt >= 60000)
@@ -523,22 +529,13 @@ public class MainActivity extends Activity {
                     if (!apkName.matches("[A-Za-z0-9._-]+\\.apk") || size <= 0 || size > 64L * 1024 * 1024 || !hash.matches("[a-fA-F0-9]{64}"))
                         throw new Exception("更新信息缺少有效的 APK 下载项");
                     if (remote.optInt("apkCode", 0) <= packageVersionCode()) { cbError(cb, "当前 APK 已是最新"); return; }
-                    List<String> bases = new ArrayList<>();
-                    bases.add(remote.optString("_base", CDNS[0]));
-                    for (String base : CDNS) if (!bases.contains(base)) bases.add(base);
                     Exception failure = null;
                     boolean downloaded = false;
-                    for (String base : bases) {
+                    for (String base : updateBases(remote)) {
                         try {
                             final String url = base + apkName;
                             UpdateDownload.fetch(new URL(url), archive, size, hash,
-                                    u -> {
-                                        HttpURLConnection c = (HttpURLConnection) u.openConnection();
-                                        c.setConnectTimeout(8000); c.setReadTimeout(15000);
-                                        c.setRequestProperty("User-Agent", NetdiskHttp.UA);
-                                        c.setRequestProperty("Accept-Encoding", "identity");
-                                        return c;
-                                    },
+                                    u -> openUpdateConnection(u, null),
                                     () -> { },
                                     (done, total) -> jsCallback(cb, new JSONObject().put("state", "downloadingapk").put("progress", total == 0 ? 0 : (double) done / total)));
                             downloaded = true; break;
@@ -553,6 +550,7 @@ public class MainActivity extends Activity {
                     intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION | android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
                 } catch (Exception ex) {
+                    android.util.Log.w("TVUpdate", "apk update failed", ex);
                     String msg = ex.getMessage() == null ? String.valueOf(ex) : ex.getMessage();
                     if (msg.contains("INSTALL")) msg = "请在系统设置中允许本应用“安装未知应用”后重试";
                     cbError(cb, msg);
@@ -625,11 +623,8 @@ public class MainActivity extends Activity {
                                     final boolean wifiOnly, final String cb) throws Exception {
             long expectedSize = remote.optLong("wgtSize", 0);
             String expectedHash = remote.optString("wgtSha256", "");
-            List<String> bases = new ArrayList<>();
-            bases.add(remote.optString("_base", CDNS[0]));
-            for (String base : CDNS) if (!bases.contains(base)) bases.add(base);
             Exception failure = null;
-            for (String base : bases) {
+            for (String base : updateBases(remote)) {
                 if (wifiOnly && !wifi.equals(wifiNetwork())) throw new java.io.IOException("Wi-Fi 已断开，等待重连后重试");
                 deleteRecursive(tmp);
                 if (!tmp.mkdirs()) throw new java.io.IOException("无法创建更新目录，请检查存储空间");
@@ -638,7 +633,7 @@ public class MainActivity extends Activity {
                     UpdateDownload.fetch(u, archive, expectedSize, expectedHash,
                             new UpdateDownload.Connection() {
                                 public HttpURLConnection open(URL url) throws Exception {
-                                    return (HttpURLConnection) (wifi == null ? url.openConnection() : wifi.openConnection(url));
+                                    return openUpdateConnection(url, wifi);
                                 }
                             },
                             new UpdateDownload.Check() {
@@ -658,6 +653,25 @@ public class MainActivity extends Activity {
                 } catch (Exception e) { failure = e; }
             }
             throw new java.io.IOException("所有更新包下载源均失败，当前版本已保留，请稍后重试", failure);
+        }
+
+        /** 更新包下载基址：带回清单的源优先，其后各 CDN，最后 api.github.com 兜底（不支持断点续传时会自动整包重下）。 */
+        private List<String> updateBases(JSONObject remote) {
+            List<String> bases = new ArrayList<>();
+            bases.add(remote.optString("_base", CDNS[0]));
+            for (String base : CDNS) if (!bases.contains(base)) bases.add(base);
+            if (!bases.contains(API_RELEASE)) bases.add(API_RELEASE);
+            return bases;
+        }
+
+        /** api.github.com 的 Contents API 需要 raw Accept 与 UA，否则 403 或返回 base64 JSON；普通 CDN 不额外设置。 */
+        private HttpURLConnection openUpdateConnection(URL url, Network wifi) throws Exception {
+            HttpURLConnection c = (HttpURLConnection) (wifi == null ? url.openConnection() : wifi.openConnection(url));
+            if (url.getHost().endsWith("api.github.com")) {
+                c.setRequestProperty("Accept", "application/vnd.github.raw");
+                c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) TV-Update-Check");
+            }
+            return c;
         }
 
         private void waitingWifi(String cb) {
@@ -800,7 +814,8 @@ public class MainActivity extends Activity {
                     if (body.isEmpty() || body.charAt(0) != '{') { failures.add("API 清单无效"); return null; }
                     JSONObject o = new JSONObject(body);
                     if (!o.optString("appId").equals("com.seagull.tv") || o.optInt("versionCode", 0) <= 0) { failures.add("API 清单无效"); return null; }
-                    o.put("_base", CDNS[0]);
+                    // 该源命中说明 api.github.com 链路可用，也把它作为更新包下载的首选基址。
+                    o.put("_base", API_RELEASE);
                     return o;
                 } finally { c.disconnect(); }
             }

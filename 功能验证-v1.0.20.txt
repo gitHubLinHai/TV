@@ -195,3 +195,20 @@
 1. 澄清需求：上一轮"电视封面再放大 2 分之 1"被我误读为缩小（改成了 8 列小封面），本轮纠正为放大——宽屏 5→3 列、手机 3→2 列（封面约放大 1.7 倍），并清理了一条后来追加的 8 列覆盖规则（它在级联中获胜导致放大不生效）。
 2. 类型徽标同步放大（12px 字、5×9 内边距）适配大封面。
 3. 浏览器 520px 实测：3 列大封面 + 大徽标，布局正常。网页回归通过。
+
+补充（同日第二十五轮）：全功能盘点与稳定性收尾（v1.0.45 / 壳 22）
+1. 全功能盘点结果：网页 13 项测试 + 真机 9 项插桩全过；逐项核对了搜索/网盘/影视(555+4KVM+自定义+接口)/短剧/音乐/优惠/播放器/更新系统/隐私九大功能，未发现功能性缺陷。发现并修复三类问题：
+   - 4KVM 解析超时 30 秒对慢网络过紧（自动连播走 4KVM 公开线路时会解析超时）：解析器放宽至 45 秒、网页侧等待 50 秒；
+   - VodInstrumentation/VodAutoNextInstrumentation 硬性断言"超清线路2"线路名——多源合并下线路名随来源变化（4KVM 公开线路/555 各线路），放宽为优先超清线路2、否则任一含"线路/公开"的直连线路；
+   - 清理临时 KvmProbe 探针与 test_vod 调试输出。
+2. 版本核对：web/manifest 1.0.45(145)、release/version.json(含 apk 字段)、GitHub raw/Contents API 三处一致；CDN 缓存穿透参数已内建。
+3. 已知边界（非缺陷）：来源站点线路/内容随时轮换导致的偶发 404/解析失败（应用有诊断与重试路径）；4kvm.net 与 555 在部分网络下间歇性慢。
+
+
+补充（第二十六轮）：APK 应用内更新失败根因修复（v1.0.46 / 壳 23）
+1. 用户现象：热更资源可到 45，但"更新 apk"始终失败。E2E 复现拿到真实堆栈：APK 下载与 SHA-256 校验其实全部成功，崩溃在 androidx FileProvider.getUriForFile——res/xml/apk_paths.xml 把单个文件 update.apk 声明为 files-path 根目录，SimplePathStrategy 对"文件即根"做 substring 越界（length=42; index=43，恰为 /data/user/0/com.seagull.tv/files/update.apk 的长度）。所有 ≤45 的壳都带此缺陷，应用内 APK 更新从未真正成功过。
+2. 修复：APK 改存 files/update/update.apk 专用子目录，provider 声明改为 path="update/"（目录）；applyApkUpdate 失败时补 Log.w 堆栈日志。
+3. 下载源加固：WGT/APK 下载基址新增 api.github.com Contents API raw 兜底（实测国内通常可达、整包 3.4MB、SHA 一致；jsDelivr 会把 .apk 301 重定向到国内常被墙的 raw.githubusercontent.com，且 API 命中清单时以其为下载首选基址）。UpdateDownload 直连 API 通道经 JVM 真实下载验证。
+4. 短剧分类：555 站下线了 vodshow/125，导航现只有 126=擦边短剧（1=电影/2=连续剧/4=动漫/3=综艺纪录不变），网页层短剧路径改为 126；临时探针（VodHttp 反射抓 /index/home）定位后删除。
+5. 验证：网页 20 项 + JVM 更新流 + 真机插桩 13 项（含新增 UpdateE2EInstrumentation：45→热更→foundapk→下载→installready→安装器，最终 dumpsys 确认 versionCode=146 覆盖安装成功）+ Privacy 全过；ParallelPlay 因 w3school 测试源抖动重试后通过。
+6. 用户侧动作：因旧壳均带 FileProvider 缺陷且无法热更修复，手机上需手动安装一次 TV-v1.0.46.apk（cdn.jsdelivr.net 直链可用），此后应用内 APK 更新即可正常使用。

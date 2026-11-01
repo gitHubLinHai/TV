@@ -4,7 +4,7 @@
   // 站点解析知识已模块化到 vod-sources.js（片源适配器注册表）。
   var serial=0,epoch=0,pending={},siteNextRefs=[],path='',allItems=[],detail=null,scroll=0,playing=false,currentEpisode=null,currentCat=0,viewIndex=0,totalSitePages=0,sitePageItems=0,loadDiag=[],loadDone=0,loadingMore=false,seenTitles=Object.create(null),sort='',lastPlan=null,apiClassesCache={},noCat=[];var PAGE=10;
   var KIND_KEYWORDS={'电视剧':['电视剧','连续剧','国产剧','剧'],'电影':['电影'],'短剧':['短剧'],'动漫':['动漫','动画'],'综艺纪录':['综艺','纪录','娱乐']};
-  var categories=[['最近更新','__latest__'],['电视剧','/vodshow/2-----------.html'],['电影','/vodshow/1-----------.html'],['短剧','/vodshow/125-----------.html'],['动漫','/vodshow/4-----------.html'],['综艺纪录','/vodshow/3-----------.html']];
+  var categories=[['最近更新','__latest__'],['电视剧','/vodshow/2-----------.html'],['电影','/vodshow/1-----------.html'],['短剧','/vodshow/126-----------.html'],['动漫','/vodshow/4-----------.html'],['综艺纪录','/vodshow/3-----------.html']];
   var SORTS=[['综合',''],['最热播','hits'],['高分','score']];
   function sourceFor(value){
     if(value&&typeof value==='object')return value;
