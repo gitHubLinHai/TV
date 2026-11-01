@@ -1,14 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 146,
-  "versionName": "1.0.46",
+  "versionCode": 147,
+  "versionName": "1.0.47",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.46.wgt",
+  "wgt": "TV-v1.0.47.wgt",
   "wgtSize": 60909,
-  "wgtSha256": "2a19420659a8827b60d54af2c2ddb065d6fae9c28185f7e03ca05207132e3521",
-  "notes": "修复 APK 应用内更新失败：FileProvider 安装路径越界 + 下载新增 api.github.com 兜底；短剧分类改为 126",
-  "apk": "TV-v1.0.46.apk",
-  "apkCode": 146,
+  "wgtSha256": "96f0c101a3c9f72d960b304e86b9a69c30dc1b885b2351fb977da2a50c18ed83",
+  "notes": "音乐播放稳定性：崩溃面板显示真实异常行、后台弹窗保护、音乐小缓冲降内存",
+  "apk": "TV-v1.0.47.apk",
+  "apkCode": 147,
   "apkSize": 3470002,
-  "apkSha256": "7e95cca444f39c449c0ec9fb67b4ca26caae4dfb9ebfa2af5d052f2b4daaed08"
+  "apkSha256": "465e5a2d01fba34e93150c20bdc506a946f5f9701e5b104a9811cdc6b9be831e"
 }
