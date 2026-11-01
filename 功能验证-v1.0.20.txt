@@ -212,3 +212,11 @@
 4. 短剧分类：555 站下线了 vodshow/125，导航现只有 126=擦边短剧（1=电影/2=连续剧/4=动漫/3=综艺纪录不变），网页层短剧路径改为 126；临时探针（VodHttp 反射抓 /index/home）定位后删除。
 5. 验证：网页 20 项 + JVM 更新流 + 真机插桩 13 项（含新增 UpdateE2EInstrumentation：45→热更→foundapk→下载→installready→安装器，最终 dumpsys 确认 versionCode=146 覆盖安装成功）+ Privacy 全过；ParallelPlay 因 w3school 测试源抖动重试后通过。
 6. 用户侧动作：因旧壳均带 FileProvider 缺陷且无法热更修复，手机上需手动安装一次 TV-v1.0.46.apk（cdn.jsdelivr.net 直链可用），此后应用内 APK 更新即可正常使用。
+
+
+补充（第二十七轮）：音乐播放闪退追查与 v1.0.47（壳 24）
+1. 用户报"音乐播放还是会闪退"。模拟器（API 29）全链路压力复现（6 轮自动连播/后台混合、MusicStress 常驻用例）未崩溃；API 29/30 镜像无法覆盖用户手机（大概率 Android 13-15）行为。
+2. 上轮的崩溃捕获存在盲区：更新面板只显示 last_crash.txt 第一行=版本头，异常信息从未露出。v1.0.47 改为提取"异常类+首个栈帧"（约 200 字符）显示在"⚠ 上次异常退出"行——下次崩溃即可直接读出原因。伪造 crash 文件实测：面板显示 "java.lang.IllegalStateException: ... | at com.seagull.tv.VideoActivity.swapMusic(VideoActivity.java:386)" 形态的完整可读摘要。
+3. 顺手修两个高危点：① 播放失败弹窗在 Activity 收尾/后台时 show() 会 BadTokenException 崩溃（音乐后台换源失败场景），加 isFinishing() 保护只更新状态栏；② 音乐纯音频流缓冲从 20-60s/48MB 降为 8-30s/6MB，显著降低后台播歌常驻内存（低内存机型被系统杀掉的主因之一）；③ MusicKeepService 通知管理器判空。
+4. 对照验证排除伪回归：47 与 46 的前台推进速率一致（当时音乐 CDN 网速 ~70% 实时，两版相同），MusicBackground 双版本均通过。
+5. 待用户反馈：若 47 仍闪退，打开应用即会在更新面板看到真实异常行，把该行发回即可精确定位。

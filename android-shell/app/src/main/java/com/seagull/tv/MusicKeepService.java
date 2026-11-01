@@ -18,7 +18,7 @@ public final class MusicKeepService extends Service {
         if (Build.VERSION.SDK_INT >= 26) {
             NotificationChannel ch = new NotificationChannel("music", "音乐播放", NotificationManager.IMPORTANCE_LOW);
             ch.setShowBadge(false);
-            nm.createNotificationChannel(ch);
+            if (nm != null) nm.createNotificationChannel(ch); // 个别 ROM 返回 null，跳过建频道不致崩
             b = new Notification.Builder(this, "music");
         } else b = new Notification.Builder(this);
         Intent open = new Intent(this, MainActivity.class);

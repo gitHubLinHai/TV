@@ -286,8 +286,10 @@ public final class VideoActivity extends Activity {
                 .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR);
             media = new DefaultMediaSourceFactory(cache).setLoadErrorHandlingPolicy(new DefaultLoadErrorHandlingPolicy(3));
         }
-        DefaultLoadControl buffer = new DefaultLoadControl.Builder().setBufferDurationsMs(20000,60000,1000,5000)
-            .setTargetBufferBytes(48*1024*1024).setPrioritizeTimeOverSizeThresholds(false).build();
+        // 音乐为纯音频流：用小缓冲即可显著降低常驻内存（低内存机型后台播歌被系统杀掉的主因之一）。
+        DefaultLoadControl buffer = new DefaultLoadControl.Builder()
+            .setBufferDurationsMs(music?8000:20000, music?30000:60000, 1000, 5000)
+            .setTargetBufferBytes(music?6*1024*1024:48*1024*1024).setPrioritizeTimeOverSizeThresholds(false).build();
         video = new ExoPlayer.Builder(this).setMediaSourceFactory(media).setLoadControl(buffer).build();
         video.setVideoTextureView(surface);
         video.setWakeMode(C.WAKE_MODE_NETWORK);
@@ -336,7 +338,10 @@ public final class VideoActivity extends Activity {
                 }
             }
             @Override public void onPlayerError(PlaybackException error) {
-                status.setText("加载失败，可重试或返回选择更低画质");showControls();
+                status.setText("加载失败，可重试或返回选择更低画质");
+                // 后台/收尾中的 Activity 弹窗会 BadTokenException 崩溃（音乐后台换源失败时高发），只更新状态栏。
+                if (isFinishing()) return;
+                showControls();
                 errorDialog=new android.app.AlertDialog.Builder(VideoActivity.this).setTitle("视频暂时无法加载")
                     .setMessage("可能是网络中断、地址过期或格式不支持。重试会从当前位置继续加载。")
                     .setPositiveButton("重试",(d,w)->{video.prepare();video.play();}).setNegativeButton("返回",(d,w)->finish()).show();

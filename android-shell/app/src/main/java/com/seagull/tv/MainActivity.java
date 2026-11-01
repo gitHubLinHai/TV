@@ -47,7 +47,7 @@ public class MainActivity extends Activity {
     private static final String API_RELEASE = "https://api.github.com/repos/gitHubLinHai/TV/contents/release/";
 
     private static final String ORIGIN = "https://app.tv.local/";
-    private static final int SHELL_VERSION = 23;
+    private static final int SHELL_VERSION = 24;
     private final ExecutorService vodPool = Executors.newFixedThreadPool(2);
     private final ExecutorService netdiskPool = Executors.newFixedThreadPool(3);
     private static final AtomicBoolean UPDATING = new AtomicBoolean();
@@ -433,17 +433,34 @@ public class MainActivity extends Activity {
                 JSONObject o = new JSONObject();
                 o.put("code", activeCode());
                 o.put("name", activeName());
-                File crash = new File(getFilesDir(), "last_crash.txt");
-                if (crash.isFile()) {
-                    try (InputStream input = new FileInputStream(crash)) {
-                        byte[] bytes = new byte[240];
-                        int n = input.read(bytes);
-                        if (n > 0) o.put("crash", new String(bytes, 0, n, java.nio.charset.StandardCharsets.UTF_8).split("\n")[0].trim());
-                    }
-                }
+                String crash = crashSummary();
+                if (crash != null) o.put("crash", crash);
                 return o.toString();
             } catch (Exception e) {
                 return "{}";
+            }
+        }
+
+        /** 上次崩溃摘要：跳过版本头行，取异常类与首个栈帧（面板可直接读懂）。 */
+        private String crashSummary() {
+            File crash = new File(getFilesDir(), "last_crash.txt");
+            if (!crash.isFile()) return null;
+            try (InputStream input = new FileInputStream(crash)) {
+                byte[] bytes = new byte[3000];
+                int n = input.read(bytes);
+                if (n <= 0) return null;
+                String[] lines = new String(bytes, 0, n, java.nio.charset.StandardCharsets.UTF_8).split("\n");
+                StringBuilder sb = new StringBuilder();
+                for (int i = 1; i < lines.length && sb.length() < 200; i++) {
+                    String l = lines[i].trim();
+                    if (l.isEmpty()) continue;
+                    if (sb.length() > 0) sb.append(" | ");
+                    sb.append(l.length() > 120 ? l.substring(0, 120) : l);
+                    if (l.startsWith("at ") && i >= 2) break; // 异常行 + 首个栈帧足够定位
+                }
+                return sb.length() == 0 ? null : sb.toString();
+            } catch (Exception e) {
+                return null;
             }
         }
 
@@ -481,14 +498,8 @@ public class MainActivity extends Activity {
                             return;
                         } else {
                             o.put("state", "uptodate");
-                            File crashFile = new File(getFilesDir(), "last_crash.txt");
-                            if (crashFile.isFile()) {
-                                try (InputStream input = new FileInputStream(crashFile)) {
-                                    byte[] bytes = new byte[240];
-                                    int n = input.read(bytes);
-                                    if (n > 0) o.put("crash", new String(bytes, 0, n, java.nio.charset.StandardCharsets.UTF_8).split("\n")[0].trim());
-                                }
-                            }
+                            String crashLine = crashSummary();
+                            if (crashLine != null) o.put("crash", crashLine);
                         }
                         o.put("version", next == activeCode() ? activeName() : remote.optString("versionName"));
                         o.put("notes", remote.optString("notes"));
