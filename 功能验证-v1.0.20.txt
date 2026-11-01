@@ -227,3 +227,11 @@
 2. 修复：load() 记录 view={kind,id}，renderRanks 按 dataset.id 高亮（搜索态全部不亮）；renderSrc 改为 dataset.src 匹配。Playwright 复测：点"飙升榜"→唯一实底选中；切"酷狗音源"→唯一描边选中。
 3. 样式：三组选择行加小节标签（榜单/搜索音源/播放队列）分组；榜单芯片紧凑化+选中黄绿实底；音源与队列改为描边态（与榜单实底区分"选择"与"开关"）；视觉分析确认无重叠/溢出。
 4. 发布注意：纯网页层发版 make_wgt 会重写 version.json 丢失 apk 字段，须把上一版（1.0.47）的 apk/apkCode/apkSize/apkSha256 补回再发布（本次 remote=148/apkCode 147）。
+
+
+补充（第二十九轮）：音乐后台闪退根因修复（v1.0.49 / 壳 25）
+1. 用户面板报文（1.0.47 崩溃摘要机制首次立功）："Unable to start service MusicKeepService … xflg=0x4"。xflg=0x4=FLAG_FROM_BACKGROUND：后台听歌→歌曲播完→下一首解析超 12 秒→播放页按超时收尾→网页层从后台新开播放页→onCreate 启动前台保活服务→系统以"后台启动前台服务"拒绝（ForegroundServiceStartNotAllowedException）→整进程崩溃。
+2. 三层修复：① MusicKeepService.onStartCommand 全体 try/catch，前台化被拒即 Log+stopSelf 降级（挂着不 stop 会被 5 秒死限整进程击杀），保活失败不影响播放；② VideoActivity 启动服务调用点兜底 catch；③ 播完收尾改为前台感知：前台 12 秒收尾防僵尸页，后台不再收尾（每 15 秒复查，回前台才收），保持原地换曲链路——从源头避免后台新开播放页。
+3. 崩溃摘要升级：外层包装异常会吃掉 200 字符预算导致根因不可见（本次用户报文即被截断在 cmp=c），改为"异常行 + Caused by 根因行 + com.seagull.tv 栈帧"三段提取；模拟验证可完整显示 ForegroundServiceStartNotAllowedException 根因。
+4. 压力测试假阴性：网易 30 秒试听触发同曲自动换源（key 不变、swapGen 递增），以"key 变化"判定推进会误报失败——改用 swapGen 递增+位置推进判定后 6 轮全过（同曲换源/跨曲推进/后台混合均覆盖）。Music/MusicBackground/MusicLyrics/PlayerGesture 全绿。
+5. 附带修复：tests/test_android_netdisk.py 白名单行在探针清理时残留孤立引号导致 SyntaxError。

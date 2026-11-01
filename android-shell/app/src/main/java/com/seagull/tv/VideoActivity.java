@@ -31,7 +31,7 @@ public final class VideoActivity extends Activity {
     private static final Object END_TOKEN = new Object();
     private ExoPlayer video;
     private String key;
-    private boolean finished, privateMode, seeking, endedOnce, controlsHidden, musicMode, boosting, seekGesture;
+    private boolean finished, privateMode, seeking, endedOnce, controlsHidden, musicMode, boosting, seekGesture, resumed;
     private float baseSpeed = 1f, seekDeltaMs;
     private long seekBaseMs;
     private TextView gestureHint;
@@ -168,8 +168,13 @@ public final class VideoActivity extends Activity {
         musicMode = music;
         if (music) {
             musicCurrent = this;
-            Intent keep = new Intent(this, MusicKeepService.class);
-            if (Build.VERSION.SDK_INT >= 26) startForegroundService(keep); else startService(keep);
+            try {
+                Intent keep = new Intent(this, MusicKeepService.class);
+                if (Build.VERSION.SDK_INT >= 26) startForegroundService(keep); else startService(keep);
+            } catch (Exception e) {
+                // 后台新开播放页时系统可能拒绝启动服务（xflg=0x4 场景）：保活失败不阻断播放本身。
+                android.util.Log.w("TVMusic", "keep service start denied", e);
+            }
         }
         subOffset=getSharedPreferences("tv_player",0).getFloat("subOffset",0.08f);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -314,7 +319,14 @@ public final class VideoActivity extends Activity {
                         if (l != null) l.onEnded(key);
                         final int gen = swapGen;
                         handler.removeCallbacksAndMessages(END_TOKEN);
-                        handler.postAtTime(() -> { if (video != null && swapGen == gen) finish(); }, END_TOKEN, android.os.SystemClock.uptimeMillis() + 12000);
+                        // 前台 12 秒收尾避免僵尸页；后台等更久（下一首解析慢时保持原地换曲链路，
+                        // 后台新开播放页会触发前台服务限制——正是音乐闪退的根因）。
+                        handler.postAtTime(new Runnable() { public void run() {
+                            if (video != null && swapGen == gen) {
+                                if (resumed) finish();
+                                else handler.postDelayed(this, 15000);
+                            }
+                        } }, END_TOKEN, android.os.SystemClock.uptimeMillis() + 12000);
                     } else {
                         finished=true; if(!privateMode)getSharedPreferences("tv_playback",0).edit().remove(key).apply();
                         if(!endedOnce){endedOnce=true;status.setText("本集播放完毕…");handler.postDelayed(()->{
@@ -367,7 +379,9 @@ public final class VideoActivity extends Activity {
     }
     private TextView label(String text){TextView view=new TextView(this);view.setText(text);view.setTextColor(0xffdddddd);view.setTextSize(12);int p=(int)(12*getResources().getDisplayMetrics().density);view.setPadding(p,p,p,p);view.setSaveEnabled(false);return view;}
     private String clock(long ms){long sec=Math.max(0,ms/1000);return String.format(java.util.Locale.ROOT,"%02d:%02d",sec/60,sec%60);}
+    @Override protected void onResume() { resumed = true; super.onResume(); }
     @Override protected void onPause() {
+        resumed = false;
         if (boosting) { boosting = false; if (video != null) video.setPlaybackSpeed(baseSpeed); }
         if (video != null) {
             // 音乐键退到后台继续播放（前台服务保活）；视频仍随退后台暂停。

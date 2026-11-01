@@ -47,7 +47,7 @@ public class MainActivity extends Activity {
     private static final String API_RELEASE = "https://api.github.com/repos/gitHubLinHai/TV/contents/release/";
 
     private static final String ORIGIN = "https://app.tv.local/";
-    private static final int SHELL_VERSION = 24;
+    private static final int SHELL_VERSION = 25;
     private final ExecutorService vodPool = Executors.newFixedThreadPool(2);
     private final ExecutorService netdiskPool = Executors.newFixedThreadPool(3);
     private static final AtomicBoolean UPDATING = new AtomicBoolean();
@@ -441,23 +441,31 @@ public class MainActivity extends Activity {
             }
         }
 
-        /** 上次崩溃摘要：跳过版本头行，取异常类与首个栈帧（面板可直接读懂）。 */
+        /** 上次崩溃摘要：异常行 + Caused by 根因行 + 应用栈帧（外层包装异常常吃掉预算，根因才是要看的）。 */
         private String crashSummary() {
             File crash = new File(getFilesDir(), "last_crash.txt");
             if (!crash.isFile()) return null;
             try (InputStream input = new FileInputStream(crash)) {
-                byte[] bytes = new byte[3000];
+                byte[] bytes = new byte[4000];
                 int n = input.read(bytes);
                 if (n <= 0) return null;
                 String[] lines = new String(bytes, 0, n, java.nio.charset.StandardCharsets.UTF_8).split("\n");
-                StringBuilder sb = new StringBuilder();
-                for (int i = 1; i < lines.length && sb.length() < 200; i++) {
+                String exLine = null, causeLine = null, firstFrame = null, appFrame = null;
+                for (int i = 1; i < lines.length; i++) {
                     String l = lines[i].trim();
                     if (l.isEmpty()) continue;
-                    if (sb.length() > 0) sb.append(" | ");
-                    sb.append(l.length() > 120 ? l.substring(0, 120) : l);
-                    if (l.startsWith("at ") && i >= 2) break; // 异常行 + 首个栈帧足够定位
+                    if (exLine == null && !l.startsWith("at ") && !l.startsWith("Caused by:")) exLine = l;
+                    else if (l.startsWith("Caused by:") && causeLine == null) causeLine = l;
+                    else if (l.startsWith("at ")) {
+                        if (firstFrame == null) firstFrame = l;
+                        if (appFrame == null && l.contains("com.seagull.tv")) appFrame = l;
+                    }
                 }
+                StringBuilder sb = new StringBuilder();
+                if (exLine != null) sb.append(exLine, 0, Math.min(exLine.length(), 100));
+                if (causeLine != null) { if (sb.length() > 0) sb.append(" | "); sb.append(causeLine, 0, Math.min(causeLine.length(), 110)); }
+                String frame = appFrame != null ? appFrame : firstFrame;
+                if (frame != null) { if (sb.length() > 0) sb.append(" | "); sb.append(frame, 0, Math.min(frame.length(), 90)); }
                 return sb.length() == 0 ? null : sb.toString();
             } catch (Exception e) {
                 return null;
