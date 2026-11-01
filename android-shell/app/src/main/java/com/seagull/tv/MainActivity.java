@@ -47,7 +47,7 @@ public class MainActivity extends Activity {
     private static final String API_RELEASE = "https://api.github.com/repos/gitHubLinHai/TV/contents/release/";
 
     private static final String ORIGIN = "https://app.tv.local/";
-    private static final int SHELL_VERSION = 27;
+    private static final int SHELL_VERSION = 28;
     private final ExecutorService vodPool = Executors.newFixedThreadPool(2);
     private final ExecutorService netdiskPool = Executors.newFixedThreadPool(3);
     private static final AtomicBoolean UPDATING = new AtomicBoolean();
@@ -554,7 +554,16 @@ public class MainActivity extends Activity {
                     if (remote.optInt("apkCode", 0) <= packageVersionCode()) { cbError(cb, "当前 APK 已是最新"); return; }
                     Exception failure = null;
                     boolean downloaded = false;
-                    for (String base : updateBases(remote, true)) {
+                    java.util.List<String> bases = updateBases(remote, true);
+                    for (int bi = 0; bi < bases.size(); bi++) {
+                        final String base = bases.get(bi);
+                        if (bi > 0) { // 换源可见：让用户知道这是备用源续传，不是重复下载
+                            String host = base;
+                            try { host = new java.net.URL(base).getHost(); } catch (Exception ignored) { }
+                            jsCallback(cb, new JSONObject().put("state", "downloadingapk")
+                                    .put("progress", (double) archive.length() / Math.max(1, size))
+                                    .put("note", "当前下载源不畅，改用备用源 " + host + "，已下载部分保留"));
+                        }
                         try {
                             final String url = base + apkName;
                             UpdateDownload.fetch(new URL(url), archive, size, hash,
@@ -686,8 +695,16 @@ public class MainActivity extends Activity {
             for (String base : CDNS) if (!bases.contains(base)) bases.add(base);
             if (!bases.contains(API_RELEASE)) bases.add(API_RELEASE);
             if (forApk) {
+                // APK 专用排序：fastly 对 .apk 必 301 到被墙 raw，挪最后；
+                // api.github.com 国内最稳，提到 CDN 之前，避免在慢速 CDN 卡到读超时才换源（用户看到"下了两次"）。
                 String fastly = CDNS[0];
                 if (bases.remove(fastly)) bases.add(fastly);
+                if (!bases.get(0).equals(API_RELEASE)) {
+                    bases.remove(API_RELEASE);
+                    int insert = Math.min(1, bases.size());
+                    if (bases.size() > 1 && bases.get(1).equals(fastly)) insert = 1;
+                    bases.add(insert, API_RELEASE);
+                }
             }
             return bases;
         }

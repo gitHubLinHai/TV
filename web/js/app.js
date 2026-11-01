@@ -104,7 +104,7 @@
       $('update-apply').hidden = false; $('update-apply').textContent = '下载并安装';
     } else if (s.state === 'downloadingapk') {
       busy = true; var pk = Math.max(0, Math.min(1, Number(s.progress) || 0));
-      $('update-title').textContent = '正在下载新 APK ' + Math.floor(pk * 100) + '%'; $('update-detail').textContent = '中断会保留进度，下次继续。'; $('update-progress').value = pk;
+      $('update-title').textContent = '正在下载新 APK ' + Math.floor(pk * 100) + '%'; $('update-detail').textContent = s.note || '中断会保留进度，下次继续。'; $('update-progress').value = pk;
     } else if (s.state === 'installready') {
       busy = false; pending = false; apkPending = false; $('update-title').textContent = '新 APK 已就绪';
       $('update-detail').textContent = '已拉起系统安装窗口，请点“安装”完成覆盖。若被拒绝，请先在系统设置中允许本应用安装。';
