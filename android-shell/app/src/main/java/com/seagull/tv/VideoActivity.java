@@ -98,7 +98,7 @@ public final class VideoActivity extends Activity {
                 }
                 if(stamps.isEmpty())continue;
                 String text=line.substring(last).replace("\r","").trim();
-                if(text.isEmpty())continue;
+                // 空文本行保留（酷狗式：间奏空行占位，中央歌词不塌缩）；连续空行仍压缩为一条
                 for(long t:stamps){times.add(t-offset);texts.add(text);}
             }
             if(times.isEmpty())return false;
@@ -132,10 +132,14 @@ public final class VideoActivity extends Activity {
         while(idx>0&&lyricTimes[idx]>pos)idx--;
         if(idx==lyricIndex)return;
         lyricIndex=idx;
+        boolean prevEmpty=false;
         for(int r=0;r<5;r++){
             int line=idx+r-2;TextView row=lyricRows[r];
-            if(line<0||line>=lyricTexts.length){row.setText("");continue;}
-            row.setText(lyricTexts[line]);
+            if(line<0||line>=lyricTexts.length){row.setText("");prevEmpty=false;continue;}
+            String text=lyricTexts[line];
+            boolean empty=text.isEmpty();
+            row.setText(empty||prevEmpty?"":text); // 连续空行只显示一个空档
+            prevEmpty=empty;
             boolean cur=line==idx;
             row.setTextSize(cur?20:14);
             row.setTextColor(cur?0xffffffff:(Math.abs(line-idx)==1?0xb3ffffff:0x66ffffff));

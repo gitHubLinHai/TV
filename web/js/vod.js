@@ -310,7 +310,7 @@
   }
   function nextPage(){gotoPage(viewIndex+1);}
   function prevPage(){gotoPage(viewIndex-1);}
-    function openDetail(item,bypass){
+    function openDetail(item,bypass){try{if(window.__reportEvent)window.__reportEvent('vod','详情 '+(item.title||'').slice(0,24));}catch(e){}
     var run=++epoch;scroll=document.querySelector('#vod-dialog .page-scroll').scrollTop;playing=false;$('vod-list-view').hidden=true;$('vod-pager').hidden=true;$('vod-detail-view').hidden=false;$('vod-title').textContent=item.title;status('正在读取详情和选集…');$('vod-routes').textContent='';$('vod-episodes').textContent='';$('vod-description').textContent='';document.querySelector('#vod-dialog .page-scroll').scrollTop=0;
     if(item.apiBase)return apiFetch(item.apiBase,'ac=videolist&ids='+encodeURIComponent(item.vodId),bypass).then(function(reply){if(run!==epoch)return;
       var v=(JSON.parse(reply.json).list||[]).filter(Boolean)[0];
@@ -333,7 +333,7 @@
   function play(ep){
     if(playing||!detail)return;var run=++epoch,selected=detail;playing=true;currentEpisode=ep;status('正在获取 '+ep.title+' 的播放地址…');
     var directPlay=function(url,referer){
-      if(bridge){if(!bridge.playVodVideo)throw new Error('请安装新版 APK 播放此来源');bridge.playVodVideo(url,selected.title+' · '+ep.title,'vod:'+selected.id+':'+ep.title,referer||'');status('已打开内置播放器，返回后可继续选集或切换线路');return Promise.resolve();}
+      if(bridge){if(!bridge.playVodVideo)throw new Error('请安装新版 APK 播放此来源');try{if(window.__reportEvent)window.__reportEvent('vod','播放 '+(selected.title||'').slice(0,24)+' '+ep.title);}catch(e){}bridge.playVodVideo(url,selected.title+' · '+ep.title,'vod:'+selected.id+':'+ep.title,referer||'');status('已打开内置播放器，返回后可继续选集或切换线路');return Promise.resolve();}
       else {var video=$('vod-video');video.hidden=false;video.src=url;return video.play().catch(function(){status('请点击视频播放；此来源在 APK 内使用原生播放器。');});}
     };
     if(ep.direct)return directPlay(ep.url,'').catch(function(e){if(run===epoch)status(e.message);}).finally(function(){if(run===epoch)playing=false;});

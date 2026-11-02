@@ -263,7 +263,13 @@ public class MainActivity extends Activity {
         }
     }
 
+    private static int logBurst; private static long logBurstAt;
     static void appendEvent(String tag, String message) {
+        long now = android.os.SystemClock.elapsedRealtime();
+        synchronized (logEvents) { // 节流：每 10 秒最多 20 条，超出丢弃（防异常循环刷爆缓冲）
+            if (now - logBurstAt > 10000) { logBurstAt = now; logBurst = 0; }
+            if (++logBurst > 20) return;
+        }
         String line = android.text.format.DateFormat.format("MM-dd HH:mm:ss", System.currentTimeMillis())
                 + " " + (tag == null ? "?" : tag) + " " + (message == null ? "" : message.replace("\n", " ").trim());
         if (line.length() > 400) line = line.substring(0, 400);

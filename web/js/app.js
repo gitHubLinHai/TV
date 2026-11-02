@@ -100,12 +100,14 @@
     } else if (s.state === 'foundapk') {
       quietCheck = false;
       busy = false; pending = true; apkPending = true; apkBundled = !!s.bundled; $('update-title').textContent = '发现新版 APK ' + s.version;
+      reportEvent('update', '发现APK ' + s.version + (apkBundled ? ' bundled' : ''));
       $('update-detail').textContent = (s.notes || '包含新的原生功能') + (apkBundled ? ' · 新 APK 已包含本次网页资源，安装后一步到位。' : ' · 下载后需在系统弹窗点“安装”。');
       $('update-apply').hidden = false; $('update-apply').textContent = '下载并安装';
     } else if (s.state === 'downloadingapk') {
       busy = true; var pk = Math.max(0, Math.min(1, Number(s.progress) || 0));
       $('update-title').textContent = '正在下载新 APK ' + Math.floor(pk * 100) + '%'; $('update-detail').textContent = s.note || '中断会保留进度，下次继续。'; $('update-progress').value = pk;
     } else if (s.state === 'installready') {
+      reportEvent('update', 'APK就绪待安装');
       busy = false; pending = false; apkPending = false; $('update-title').textContent = '新 APK 已就绪';
       $('update-detail').textContent = '已拉起系统安装窗口，请点“安装”完成覆盖。若被拒绝，请先在系统设置中允许本应用安装。';
       $('update-apply').hidden = false; $('update-apply').textContent = '再次拉起安装';
@@ -114,6 +116,7 @@
       busy = true; var p = Math.max(0, Math.min(1, Number(s.progress) || 0));
       $('update-title').textContent = '正在更新 ' + Math.floor(p * 100) + '%'; $('update-detail').textContent = '中断会保留进度，下次继续。'; $('update-progress').value = p;
     } else if (s.state === 'done') {
+      reportEvent('update', '热更完成 ' + s.version);
       busy = false; pending = false; $('update-title').textContent = '更新完成 ' + s.version; $('update-detail').textContent = '正在载入新版首页…'; setTimeout(function () { bridge.reloadHome(); }, 700);
     } else if (s.state === 'waitingwifi') {
       busy = false; pending = true; retryAt = Date.now() + 10000; $('update-title').textContent = '等待 Wi-Fi'; $('update-detail').textContent = '下载进度已保留，连接后继续。'; $('update-apply').hidden = false;
@@ -183,6 +186,7 @@
 
   // ===== 一键上传日志（设置页）：上传成功给链接，失败给全文复制 =====
   function reportEvent(tag, message) { try { if (bridge && bridge.logEvent) bridge.logEvent(tag, String(message).slice(0, 300)); } catch (e) { } }
+  window.__reportEvent = reportEvent; // 全功能埋点共用入口（限流在原生侧）
   // 令牌配置：保存后提示已启用直传
   $('diag-token-save').addEventListener('click', function () {
     if (!bridge || !bridge.diagToken) { $('log-result').textContent = '当前 APK 过旧，请先更新。'; return; }

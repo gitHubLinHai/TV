@@ -271,6 +271,7 @@
   }
   function play(save) {
     var file = selected, item = current; if (!item || !file) return;
+    try{if(window.__reportEvent)window.__reportEvent('netdisk',(save?'转存完整播放':'分享预览')+' '+(file.file_name||'').slice(0,30));}catch(e){}
     var run = generation, mediaKey = item.id + ':' + file.fid;
     $('media-status').textContent = save ? '正在转存你选择的一个文件到网盘根目录…' : '正在获取视频地址…';
     $('media-save').disabled = true; $('media-retry').disabled = true;

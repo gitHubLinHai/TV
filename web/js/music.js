@@ -182,6 +182,7 @@
         if(!attempt||attempt.song!==song)return;
         status('正在播放《'+song.name+'》· 来源 '+chain[which].name+(lrc?' · 歌词':''));
         var nb=$('music-now');if(nb){nb.hidden=false;$('music-now-title').textContent=song.name;$('music-now-sub').textContent=(song.artist||'—')+' · '+chain[which].name;}
+      try{if(window.__reportEvent)window.__reportEvent('music','起播 '+(song.name||'').slice(0,24)+' 来源 '+chain[which].name);}catch(e){}
         if(bridge&&bridge.playMusic)bridge.playMusic(url,(song.artist?song.artist+' · ':'')+song.name,keyOf(song),lrc);
         else if(bridge&&bridge.playPublicVideo)bridge.playPublicVideo(url,(song.artist?song.artist+' · ':'')+song.name,keyOf(song));
         else{var audio=$('music-audio');audio.hidden=false;audio.src=url;audio.play().catch(function(){status('请点击下方播放器开始播放');});}
@@ -215,10 +216,10 @@
     },
     preload:function(){fetchList('playlist',RANKS[0][1]).catch(function(){});}};
   function stopAudio(){var audio=$('music-audio');audio.pause();audio.removeAttribute('src');audio.load();audio.hidden=true;}
-  $('music-open').addEventListener('click',function(){if($('music-dialog').open)return;$('music-dialog').show();load('playlist',RANKS[0][1],RANKS[0][0]);});
+  $('music-open').addEventListener('click',function(){if($('music-dialog').open)return;$('music-dialog').show();try{if(window.__reportEvent)window.__reportEvent('music','打开');}catch(e){}load('playlist',RANKS[0][1],RANKS[0][0]);});
   $('music-close').addEventListener('click',function(){$('music-dialog').close();});
   $('music-dialog').addEventListener('close',function(){++epoch;list=[];$('music-list').textContent='';playing=null;attempt=null;stopAudio();var nb=$('music-now');if(nb)nb.hidden=true;});
-  RANKS.forEach(function(entry){var b=document.createElement('button');b.type='button';b.textContent=entry[0];b.dataset.id=entry[1];b.addEventListener('click',function(){load('playlist',entry[1],entry[0]);});$('music-ranks').appendChild(b);});
+  RANKS.forEach(function(entry){var b=document.createElement('button');b.type='button';b.textContent=entry[0];b.dataset.id=entry[1];b.addEventListener('click',function(){try{if(window.__reportEvent)window.__reportEvent('music','榜单 '+entry[0]);}catch(e){}load('playlist',entry[1],entry[0]);});$('music-ranks').appendChild(b);});
   // 搜索音源切换：网易（GD 全曲库）/ 酷狗（免费直链命中率互补）。
   function renderSrc(){Array.prototype.forEach.call($('music-src').children,function(b){b.classList.toggle('selected',b.dataset.src===musicSrc);});}
   [['网易','netease'],['酷狗','kugou']].forEach(function(pair){

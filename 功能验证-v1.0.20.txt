@@ -300,3 +300,11 @@
 1. 用户要求"直接传到 git 里的 text 文件，开发者直接读取"——已实现：创建私有仓库 gitHubLinHai/TV-logs；应用设置页新增"日志直传仓库令牌"（一次性配置，存本机偏好 tv_diag/token）；配置后一键上传经 Contents API PUT 到 TV-logs/logs/log-<时间>-<机型>.txt，面板显示文件路径（无需再发链接）；未配置令牌时回退 dpaste.com 链接，再回退全文复制。
 2. 令牌不打包进 APK（可被提取）：需用户在 GitHub 网页生成"仅 TV-logs、Contents 读写"的 fine-grained 令牌粘进设置——安全模型为最小权限，泄露也仅能写日志仓库。
 3. 真机端到端：探针借本机凭证令牌（root 推入 files/diag_token.txt，用后即删）→ 设置上传 → 仓库落盘 logs/log-1102-034251-sdk-gphone-x86-6.txt（260KB）→ 开发者侧 Contents API 直接读取，四段内容（诊断头/探针事件/崩溃/logcat）全部命中。
+
+
+补充（第四十轮）：日志审计结论 + 铺满屏/歌词空行 + 全功能埋点（v1.0.60 / 壳 31 不变，仅网页层+歌词原生）
+1. 用户日志（TV-logs 仓库直传首份真实数据）审计：FOREGROUND_SERVICE_MEDIAPLAYBACK 权限声明在 1.0.49 已补（崩溃日志是 v1.0.48 时代的），无遗留问题；MIUI/Android16 的后台 FGS 限制由 1.0.49 降级保护兜住。设备：小米 24117RK2CC，Android 16（API 36）。
+2. 页签宽度：影视/音乐 dialog 从 min(880px,100vw-24) 改为 calc(100vw - 12px)/max 960px——手机铺满，平板限宽。
+3. 歌词空行保留（酷狗式）：parseLyrics 不再丢弃空文本行（间奏空行占位）；updateLyrics 连续空行压缩为一个空档避免多行空白。
+4. 全功能轻量埋点：update（发现APK/热更完成/APK就绪/失败）、vod（打开/分类/详情/播放）、music（打开/榜单/起播/换源/无源）、netdisk（转存播放/预览失败带码）——window.__reportEvent 统一入口，原生 appendEvent 每 10 秒 20 条节流，环形缓冲 150 条，性能零感知。
+5. 自伤即修：vod 埋点把 ev() 定义插错作用域（openDetail 在定义前执行）致详情页全挂（ev is not defined）——Playwright 点卡片复现后改全内联 try/catch；教训：跨作用域 helper 必须定义在使用点之前或干脆内联。
