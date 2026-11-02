@@ -1,14 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 156,
-  "versionName": "1.0.56",
+  "versionCode": 157,
+  "versionName": "1.0.57",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.56.wgt",
-  "wgtSize": 62891,
-  "wgtSha256": "0572b22e948bcae206ad292e6b2928bcce24fdf86c07fd14311d289a8fc7f763",
-  "notes": "音源切换真实生效：选酷狗后点歌优先酷狗直链（完整版更多），看搜索结果时切源自动重跑；播放队列改为连体分段开关样式",
-  "apk": "TV-v1.0.52.apk",
-  "apkCode": 152,
+  "wgt": "TV-v1.0.57.wgt",
+  "wgtSize": 63021,
+  "wgtSha256": "fb939ae16359478f585c1c7797a6aa363f484f6b57d618956586d6e8dee8269a",
+  "notes": "播放器爱奇艺化：方向改锁定当前方向的锁按钮、倍速提示移顶部不挡画面、滑动快进随手速快慢缩放；影视页记住上次分类",
+  "apk": "TV-v1.0.57.apk",
+  "apkCode": 157,
   "apkSize": 3474098,
-  "apkSha256": "191bec31f0b41b2bfb0c2828534562462dc7cdf907f74fc8a564c26ce87b923f"
+  "apkSha256": "a14a56ee758122413c341571c86204e24840a0a21be04752225b799d133428c0"
 }
