@@ -1,14 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 159,
-  "versionName": "1.0.59",
+  "versionCode": 160,
+  "versionName": "1.0.60",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.59.wgt",
-  "wgtSize": 64990,
-  "wgtSha256": "ff86ea484f2e0542c5ec238f3b3bb824ff7dbd93cc645791c4432157b0c4784a",
-  "notes": "日志可直传你的 GitHub 日志仓库 TV-logs：设置里一次性配置仅该仓库可写的令牌，之后一键上传无需发链接；未配置时仍走公共日志站",
-  "apk": "TV-v1.0.59.apk",
-  "apkCode": 159,
+  "wgt": "TV-v1.0.60.wgt",
+  "wgtSize": 65231,
+  "wgtSha256": "7a4b8b16885a63c436624c2777b77e7d99ed51c1baf8237ffdcce52bd32bf1fa",
+  "notes": "影视/音乐页铺满屏幕宽度；音乐歌词空行保留（间奏不塌缩）；全功能轻量日志埋点（打开/分类/播放/失败，节流不影响性能）",
+  "apk": "TV-v1.0.60.apk",
+  "apkCode": 160,
   "apkSize": 3478194,
-  "apkSha256": "0125e6c76b479ae369505761aa968e1d082628fea06173f3b2d0428124930313"
+  "apkSha256": "72475b050b1f8457e3ae4f7e7dc2780e27032f74bc98a4102f8c4345c4fe1d6f"
 }
