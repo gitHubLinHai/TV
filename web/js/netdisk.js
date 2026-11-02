@@ -265,6 +265,7 @@
   function safeVideo(url) { try { var u = new URL(url); return u.protocol === 'https:' && /(^|\.)quark\.cn$/.test(u.hostname) && !u.username && !u.password; } catch (e) { return false; } }
   function startVideo(url, item, file, preview) {
     if (!safeVideo(url)) throw new Error('接口未返回可用的夸克播放地址');
+    try { if (window.PlayHistory && !preview) window.PlayHistory.add({ kind: 'netdisk', title: file.file_name + ' · ' + item.title, share: { id: item.id, password: item.password || item.passcode || $('share-password').value.trim(), title: item.title } }); } catch (e) { }
     $('media-status').textContent = preview ? '正在播放分享页提供的预览；完整播放可登录后转存。' : '已取得账号播放地址';
     if (bridge) { bridge.playVideo(url, file.file_name + (preview ? '（分享预览）' : ''), item.id + ':' + file.fid + (preview ? ':preview' : '')); }
     else { var video = $('preview-video'); video.hidden = false; video.preload = 'auto'; video.src = '/api/media?url=' + encodeURIComponent(url); video.play().catch(function () { $('media-status').textContent = '请点击播放器开始播放；完整播放需在 APK 内登录后转存。'; }); }
@@ -373,6 +374,7 @@
   $('netdisk-validate-more').addEventListener('click', function () { validateBatch(generation,true); });
   $('netdisk-retry').addEventListener('click', function () { search($('query').value.trim(), true); });
   function reset() { ++generation; validating = false; sourcesPending = 0; shareMemory = {}; searchMemory=Object.create(null); checkedBudget = 0; resultScroll = 0; loginPending = false; results = []; current = selected = null; files = []; owned = {}; folderStack = []; if ($('media-dialog').open) $('media-dialog').close(); $('netdisk-panel').hidden = true; $('netdisk-list').textContent = ''; $('source-diagnostics').textContent = ''; $('share-password').value = ''; refreshAccount(); }
-  window.Netdisk = { currentPage:function(){return current?{title:current.title,url:'https://pan.quark.cn/s/'+current.id+($('share-password').value.trim()?'?pwd='+encodeURIComponent($('share-password').value.trim()):'')}:null;}, reset: reset, search: search, back: back, normalise: normalise, shareId: shareId, extractShare: extractShare, refreshAccount:refreshAccount, openBookmark:function (url,title) { var item = extractShare(url); if (item) { item.title = title || item.title; return openShare(item,true); } } };
+  window.Netdisk = { currentPage:function(){return current?{title:current.title,url:'https://pan.quark.cn/s/'+current.id+($('share-password').value.trim()?'?pwd='+encodeURIComponent($('share-password').value.trim()):'')}:null;}, reset: reset, search: search, back: back, normalise: normalise, shareId: shareId, extractShare: extractShare, refreshAccount:refreshAccount, openBookmark:function (url,title) { var item = extractShare(url); if (item) { item.title = title || item.title; return openShare(item,true); } },
+        replayShare:function (share) { if (!share || !share.id) return; var item = { id: share.id, title: share.title || '夸克分享', password: share.password || '', url: 'https://pan.quark.cn/s/' + share.id }; return openShare(item,false); } };
   refreshAccount();
 }());

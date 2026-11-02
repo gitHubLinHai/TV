@@ -187,6 +187,24 @@
   // ===== 一键上传日志（设置页）：上传成功给链接，失败给全文复制 =====
   function reportEvent(tag, message) { try { if (bridge && bridge.logEvent) bridge.logEvent(tag, String(message).slice(0, 300)); } catch (e) { } }
   window.__reportEvent = reportEvent; // 全功能埋点共用入口（限流在原生侧）
+
+  // ===== 播放历史：最近播放的影视/网盘视频，点击可跳回重播（无痕不记录）=====
+  // 条目：{kind:'vod'|'netdisk', title, at, vod?:{path,item,title,src}, share?:{id,password,title,fid,fname}}
+  window.PlayHistory = {
+    key: 'tv_play_history',
+    all: function () { try { return read(this.key, []) || []; } catch (e) { return []; } },
+    add: function (entry) {
+      if (!entry || privacy.enabled || !entry.title) return;
+      try {
+        var list = this.all().filter(function (x) { return !(x.kind === entry.kind && x.title === entry.title && (!entry.vod || (x.vod && x.vod.path === entry.vod.path))); });
+        entry.at = Date.now();
+        list.unshift(entry);
+        while (list.length > 60) list.pop();
+        localStorage.setItem(this.key, JSON.stringify(list));
+      } catch (e) { }
+    },
+    clear: function () { try { localStorage.removeItem(this.key); } catch (e) { } }
+  };
   // 令牌配置：保存后提示已启用直传
   $('diag-token-save').addEventListener('click', function () {
     if (!bridge || !bridge.diagToken) { $('log-result').textContent = '当前 APK 过旧，请先更新。'; return; }
@@ -216,6 +234,39 @@
       if (!window.__lastLogText) r.textContent += '\n（日志内容为空）';
     }
   };
+  // ===== 播放历史面板：列表 + 点击重跳 =====
+  function renderPlayHistory() {
+    var box = $('play-history-list'), statusEl = $('play-history-status');
+    box.textContent = '';
+    var list = window.PlayHistory.all();
+    if (!list.length) { statusEl.textContent = '还没有播放记录：播放影视或网盘视频后自动出现在这里（无痕模式不记录）。'; return; }
+    statusEl.textContent = '最近 ' + list.length + ' 条，点击跳回重播。';
+    var frag = document.createDocumentFragment();
+    list.forEach(function (entry) {
+      var row = document.createElement('button');
+      row.type = 'button'; row.className = 'history-play-row';
+      var title = document.createElement('strong');
+      title.textContent = (entry.kind === 'netdisk' ? '夸克 · ' : '') + entry.title;
+      var time = document.createElement('small');
+      time.textContent = new Date(entry.at).toLocaleString();
+      row.appendChild(title); row.appendChild(time);
+      row.addEventListener('click', function () {
+        if (!bridge) return;
+        $('play-history-dialog').close();
+        if (entry.kind === 'vod' && entry.vod) {
+          if (window.Vod) { $('vod-open').click(); setTimeout(function () { window.Vod.openDetailFromHistory(entry.vod); }, 400); }
+        } else if (entry.kind === 'netdisk' && entry.share) {
+          var ev = document.getElementById('quark-open');
+          if (ev) { ev.click(); setTimeout(function () { if (window.Netdisk && window.Netdisk.replayShare) window.Netdisk.replayShare(entry.share); }, 500); }
+        }
+      });
+      frag.appendChild(row);
+    });
+    box.appendChild(frag);
+  }
+  $('play-history-open').addEventListener('click', function () { renderPlayHistory(); $('play-history-dialog').showModal(); });
+  $('play-history-close').addEventListener('click', function () { $('play-history-dialog').close(); });
+  $('play-history-clear').addEventListener('click', function () { window.PlayHistory.clear(); renderPlayHistory(); });
   $('log-upload').addEventListener('click', function () {
     $('log-result').textContent = '正在采集并上传日志…（崩溃、事件、系统日志）';
     $('log-copy').hidden = true;

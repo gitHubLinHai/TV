@@ -341,6 +341,7 @@
   function play(ep){
     if(playing||!detail)return;var run=++epoch,selected=detail;playing=true;currentEpisode=ep;status('正在获取 '+ep.title+' 的播放地址…');
     var directPlay=function(url,referer){
+      try{if(window.PlayHistory)window.PlayHistory.add({kind:'vod',title:(selected.title||'')+' · '+ep.title,vod:{path:selected.itemPath||detail.itemPath,item:{path:selected.itemPath||detail.itemPath,title:selected.title,host:selected.host,adapter:selected.adapter,src:selected.src}}});}catch(e){}
       if(bridge){if(!bridge.playVodVideo)throw new Error('请安装新版 APK 播放此来源');try{if(window.__reportEvent)window.__reportEvent('vod','播放 '+(selected.title||'').slice(0,24)+' '+ep.title);}catch(e){}bridge.playVodVideo(url,selected.title+' · '+ep.title,'vod:'+selected.id+':'+ep.title,referer||'');status('已打开内置播放器，返回后可继续选集或切换线路');return Promise.resolve();}
       else {var video=$('vod-video');video.hidden=false;video.src=url;return video.play().catch(function(){status('请点击视频播放；此来源在 APK 内使用原生播放器。');});}
     };
@@ -481,5 +482,9 @@
       if(drama)fetchDoc(drama,s).catch(function(){});
     });
   }
-  window.Vod={back:function(){if(!$('vod-detail-view').hidden)$('vod-back').click();else window.Vod.reset();},reset:function(){close();if($('vod-dialog').open)$('vod-dialog').close();},autoNext:autoNext,preload:preload,applySort:applySort,parseList:function(html){return VodSources.maccmsPage.parseList(html);},parseDetail:function(html,target){return VodSources.maccmsPage.parseDetail(html,target);},parsePlayer:function(html){return VodSources.maccmsPage.parsePlayer(html);},sitePath:sitePath};
+  window.Vod={back:function(){if(!$('vod-detail-view').hidden)$('vod-back').click();else window.Vod.reset();},reset:function(){close();if($('vod-dialog').open)$('vod-dialog').close();},autoNext:autoNext,preload:preload,applySort:applySort,parseList:function(html){return VodSources.maccmsPage.parseList(html);},parseDetail:function(html,target){return VodSources.maccmsPage.parseDetail(html,target);},parsePlayer:function(html){return VodSources.maccmsPage.parsePlayer(html);},sitePath:sitePath,
+    openDetailFromHistory:function(vod){ // 播放历史跳回：打开影视页并直接进该影片详情选集
+      if($('vod-dialog').hidden===undefined||!$('vod-dialog').open){if(!$('vod-dialog').open){try{openVod();}catch(e){}}}
+      try{openDetail({path:vod.path,item:vod.item,title:vod.item&&vod.item.title||vod.itemPath,host:vod.item&&vod.item.host,adapter:vod.item&&vod.item.adapter,src:vod.item&&vod.item.src},true);}catch(e){status('该记录已失效，请重新搜索或浏览片单');}
+    }};
 }());
