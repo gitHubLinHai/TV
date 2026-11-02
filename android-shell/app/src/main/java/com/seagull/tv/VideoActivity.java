@@ -32,6 +32,7 @@ public final class VideoActivity extends Activity {
     private ExoPlayer video;
     private String key;
     private boolean finished, privateMode, seeking, endedOnce, controlsHidden, musicMode, boosting, seekGesture, resumed;
+    private long scrollLastT;
     private float baseSpeed = 1f, seekDeltaMs;
     private long seekBaseMs;
     private TextView gestureHint;
@@ -236,9 +237,16 @@ public final class VideoActivity extends Activity {
         Button speed=flat("1.0×",12);options.addView(speed,new LinearLayout.LayoutParams(0,-2,1));
         speed.setOnClickListener(v->{final String[] labels={"0.5×","0.75×","1.0×","1.25×","1.5×","2.0×","3.0×"};final float[] rates={.5f,.75f,1f,1.25f,1.5f,2f,3f};
             optionsDialog=new android.app.AlertDialog.Builder(this).setTitle("播放速度").setItems(labels,(d,w)->{video.setPlaybackSpeed(rates[w]);speed.setText(labels[w]);}).show();});
-        Button orientation=flat("方向",12);options.addView(orientation,new LinearLayout.LayoutParams(0,-2,1));
-        orientation.setOnClickListener(v->optionsDialog=new android.app.AlertDialog.Builder(this).setTitle("屏幕方向").setItems(new String[]{"跟随系统","锁定横屏","锁定竖屏"},(d,w)->{
-            setRequestedOrientation(new int[]{android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE,android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT}[w]);orientation.setText(new String[]{"方向","横屏","竖屏"}[w]);}).show());
+        // 方向锁（爱奇艺式）：在什么方向点按就锁定当前方向，再点解锁跟随系统。
+        final boolean[] dirLocked={false};
+        Button orientation=flat("🔓",14);options.addView(orientation,new LinearLayout.LayoutParams(0,-2,1));
+        orientation.setOnClickListener(v->{
+            if(dirLocked[0]){dirLocked[0]=false;setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);orientation.setText("🔓");showGestureHint("已解锁，方向跟随系统",800);}
+            else{dirLocked[0]=true;
+                boolean landscape=getResources().getConfiguration().orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+                setRequestedOrientation(landscape?android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE:android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
+                orientation.setText("🔒");showGestureHint("已锁定"+(landscape?"横屏":"竖屏"),800);}
+        });
         // 字幕偏移：检测到字幕轨才出现，调整字幕距底部的位置（记忆偏好）。
         subButtons=new LinearLayout(this);subButtons.setGravity(Gravity.CENTER_VERTICAL);subButtons.setVisibility(View.GONE);
         Button subUp=flat("字幕↑",12);subButtons.addView(subUp,new LinearLayout.LayoutParams(0,-2,1));
@@ -257,8 +265,8 @@ public final class VideoActivity extends Activity {
         root.addView(bottomBar,new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM));
         // 音乐播放：解析歌词并在画面中央滚动显示（当前行高亮，上下各两行渐隐）。
         gestureHint=new TextView(this);gestureHint.setTextColor(0xffffffff);gestureHint.setTextSize(18);gestureHint.setShadowLayer(6,0,2,0xff000000);gestureHint.setGravity(Gravity.CENTER);gestureHint.setVisibility(View.GONE);gestureHint.setSaveEnabled(false);
-        gestureHint.setTranslationY(-(int)(110*getResources().getDisplayMetrics().density));
-        root.addView(gestureHint,new FrameLayout.LayoutParams(-2,-2,Gravity.CENTER));
+        root.addView(gestureHint,new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.CENTER_HORIZONTAL));
+        ((FrameLayout.LayoutParams)gestureHint.getLayoutParams()).topMargin=(int)(96*getResources().getDisplayMetrics().density);
         String lyrics=getIntent().getStringExtra("lyrics");
         if(key.startsWith("music:")&&lyrics!=null&&lyrics.length()>4)buildLyrics(root,lyrics);
         setContentView(root);
@@ -292,8 +300,11 @@ public final class VideoActivity extends Activity {
                 if(video==null||boosting)return true;
                 long duration=video.getDuration();
                 if(duration<=0||Math.abs(dx)<=Math.abs(dy))return true;
-                if(!seekGesture){seekGesture=true;seekBaseMs=video.getCurrentPosition();seekDeltaMs=0;}
-                seekDeltaMs-=dx*(90000f/Math.max(1,frame.getWidth()));
+                if(!seekGesture){seekGesture=true;seekBaseMs=video.getCurrentPosition();seekDeltaMs=0;scrollLastT=e2.getEventTime();}
+                long sdt=e2.getEventTime()-scrollLastT;scrollLastT=e2.getEventTime();
+                float speed=sdt>0?Math.abs(dx)*1000f/sdt:0; // px/s
+                float factor=1f+Math.min(5f,speed/1200f);   // 慢滑=原速精调，快滑最多 6 倍步进
+                seekDeltaMs-=dx*(90000f/Math.max(1,frame.getWidth()))*factor;
                 long target=Math.max(0,Math.min(duration,seekBaseMs+(long)seekDeltaMs));
                 long offset=target-seekBaseMs;
                 showGestureHint((offset>=0?"快进 +":"快退 -")+clock(Math.abs(offset)),0);

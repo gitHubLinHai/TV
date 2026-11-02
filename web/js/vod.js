@@ -362,12 +362,17 @@
   function close(){++epoch;playing=false;currentEpisode=null;currentCat=0;viewIndex=0;totalSitePages=0;siteNextRefs=[];allItems=[];loadingMore=false;markChip();stop();$('vod-query').value='';detail=null;$('vod-list').textContent='';$('vod-episodes').textContent='';$('vod-description').textContent='';}
   $('vod-close').addEventListener('click',function(){window.Vod.reset();});$('vod-dialog').addEventListener('close',close);
   function markChip(){Array.prototype.forEach.call($('vod-categories').children,function(b,i){b.classList.toggle('selected',i===currentCat);});}
-  function renderChips(){var box=$('vod-categories');box.textContent='';categories.forEach(function(c,i){var b=button(c[0],function(){currentCat=i;markChip();loadList(applySort(c[1]),false,{cat:c[0]});},i===currentCat?'selected':'');box.appendChild(b);});}
+  function renderChips(){var box=$('vod-categories');box.textContent='';categories.forEach(function(c,i){var b=button(c[0],function(){currentCat=i;try{localStorage.setItem('tv_last_cat',String(i));}catch(e){}markChip();loadList(applySort(c[1]),false,{cat:c[0]});},i===currentCat?'selected':'');box.appendChild(b);});}
   // ===== 排序：综合(默认按更新)/最热播(按人气)/高分(按评分)，仅对分类页生效 =====
   function applySort(target){if(!sort)return target;var m=target.match(/^\/vodshow\/(\d+)-{11}\.html$/);return m?'/vodshow/'+m[1]+'--'+sort+'---------.html':target;}
   function markSorts(){Array.prototype.forEach.call($('vod-sorts').children,function(b,i){b.classList.toggle('selected',SORTS[i][1]===sort);});}
   function renderSorts(){var box=$('vod-sorts');box.textContent='';SORTS.forEach(function(s){var b=button(s[0],function(){sort=s[1];markSorts();if(/^\/vodshow\/\d+-{11}\.html$/.test(path))loadList(applySort(path),false,null,true);else status('当前列表不涉及排序；选择分类后按“'+s[0]+'”加载');},sort===s[1]?'selected':'');box.appendChild(b);});}
-  function openVod(){if(!$('vod-dialog').open)$('vod-dialog').show();currentCat=1;markChip();window.__vodTab='vod-open';loadList(applySort(categories[1][1]),false,{cat:categories[1][0]});}
+  function openVod(){if(!$('vod-dialog').open)$('vod-dialog').show();
+    // 记住上次选择的分类：切走再回来不再是默认电视剧（localStorage 持久）
+    var raw=null;try{raw=localStorage.getItem('tv_last_cat');}catch(e){}
+    var n=(raw!==null&&!isNaN(Number(raw)))?Number(raw):1;
+    currentCat=(n>=0&&n<categories.length)?n:1;
+    markChip();window.__vodTab='vod-open';loadList(applySort(categories[currentCat][1]),false,{cat:categories[currentCat][0]});}
   $('vod-open').addEventListener('click',openVod);
   renderChips();renderSorts();
   // ===== 片源管理 UI =====
