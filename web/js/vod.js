@@ -145,14 +145,22 @@
     });
     box.appendChild(frag);
   }
-  function pageTotal(){return totalSitePages>1?Math.ceil(totalSitePages*(sitePageItems||23)/PAGE):1;}
+  function pageTotal(){
+    // 有源站总页数信息时按其估算；无信息（混合流/最近更新）时退回"已加载量估算"，
+    // 且有下一页链接可用时至少显示已加载页数，避免出现"第 5 / 约 1 页"的自相矛盾。
+    var estimate=totalSitePages>1?Math.ceil(totalSitePages*(sitePageItems||23)/PAGE):0;
+    var loaded=Math.ceil(allItems.length/PAGE);
+    var more=siteNextRefs.length>0?loaded+1:0;
+    return Math.max(estimate,loaded,more,1);
+  }
   function statusFor(){return allItems.length?('已读取 '+allItems.length+' 部 · 第 '+(viewIndex+1)+'/'+pageTotal()+' 页'):'来源没有返回片单，可能无结果或页面结构已变化';}
   function renderPager(){
     var atEnd=!siteNextRefs.length&&(viewIndex+1)*PAGE>=allItems.length;
     $('vod-pager').hidden=viewIndex===0&&atEnd;
     $('vod-prev').disabled=viewIndex===0;
     $('vod-next').disabled=atEnd||loadingMore;
-    $('vod-page').textContent='第 '+(viewIndex+1)+' / 约 '+pageTotal()+' 页';
+    var total=pageTotal(),known=totalSitePages>1; // 仅当源站报告了真实总页数才显示"约 N 页"
+    $('vod-page').textContent='第 '+(viewIndex+1)+(known?' / 约 '+total+' 页':' 页')+(atEnd?' · 末页':'');
   }
   function showView(){renderList();renderPager();}
   // ===== 多源抓取：并行取所有勾选的片源，按标题去重合并；单源失败不影响其余。 =====
