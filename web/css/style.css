@@ -162,8 +162,9 @@ header .bookmarks-button{margin-left:auto;margin-right:8px;padding:8px;font-size
 
 
 .vod-cover .cov-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#5f6f66;background:linear-gradient(145deg,#1a221e,#12181a)}
-/* v1.0.54 队列按钮符号化（▶/■、🔁、🔂）与正在播放卡：保持原有深色+黄绿主题 */
-#music-queue .queue-btn{font-size:18px;line-height:1;min-width:52px;text-align:center}
+/* v1.0.56 队列改为连体分段开关：一体容器 + 三段，选中段黄绿填充 */
+#music-queue{display:inline-flex;align-items:center;gap:3px;padding:3px;background:#242e29;border:1px solid #ffffff12;border-radius:14px}
+#music-queue .queue-btn{background:transparent;border:0;border-radius:10px;padding:8px 18px;font-size:16px;line-height:1;min-width:0;text-align:center;color:#9aa89d;box-shadow:none}
 #music-queue .queue-btn.selected{background-color:var(--lime);color:#24311d;font-weight:600}
 #music-now{position:sticky;bottom:10px;z-index:9;display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 16px;border-radius:16px;background-color:#1d2833;border:1px solid #ffffff14;box-shadow:0 12px 30px #00000080}
 #music-now .now-copy{min-width:0}

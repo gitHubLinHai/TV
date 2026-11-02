@@ -61,7 +61,7 @@
   // 当前视图（榜单 or 搜索）：驱动榜单芯片选中态；搜索时全部芯片不亮。
   var view={kind:'playlist',id:RANKS[0][1]};
   function load(kind,id,label){
-    var run=++epoch;view={kind:kind,id:id};renderRanks();
+    var run=++epoch;view={kind:kind,id:id,label:label};renderRanks();
     status('正在读取'+label+'…');$('music-list').textContent='';
     fetchList(kind,id).then(function(songs){
       if(run!==epoch)return;
@@ -146,6 +146,11 @@
       {name:'酷狗',make:function(){return kgUrlByHash(song.id);}},
       {name:'网易',make:function(){return neteaseIdFor(song).then(metingUrl);}},
       {name:'网易GD',make:function(){return neteaseIdFor(song).then(gdUrlFor);}}];
+    // 音源选择影响取链顺序：选酷狗时优先酷狗直链（完整版命中率高，避开 30 秒试听）
+    if(musicSrc==='kugou')return [
+      {name:'酷狗',make:function(){return kgSearchUrl(song);}},
+      {name:'网易',make:function(){return metingUrl(song.id);}},
+      {name:'网易GD',make:function(){return gdUrlFor(song.id);}}];
     return [
       {name:'网易',make:function(){return metingUrl(song.id);}},
       {name:'网易GD',make:function(){return gdUrlFor(song.id);}},
@@ -217,7 +222,9 @@
   function renderSrc(){Array.prototype.forEach.call($('music-src').children,function(b){b.classList.toggle('selected',b.dataset.src===musicSrc);});}
   [['网易','netease'],['酷狗','kugou']].forEach(function(pair){
     var b=document.createElement('button');b.type='button';b.textContent=pair[0]+'音源';b.dataset.src=pair[1];
-    b.addEventListener('click',function(){musicSrc=pair[1];renderSrc();status(musicSrc==='kugou'?'已切换酷狗音源：搜索酷狗曲库':'已切换网易音源：搜索网易全曲库');});
+    b.addEventListener('click',function(){musicSrc=pair[1];renderSrc();
+      if(view.kind==='search'){load(view.kind,view.id,view.label||('搜索“'+$('music-query').value.trim().slice(0,20)+'”'));return;}
+      status(musicSrc==='kugou'?'已切换酷狗音源：之后点歌优先用酷狗直链（完整版更多），搜索走酷狗曲库':'已切换网易音源：之后点歌优先用网易，搜索走网易全曲库');});
     $('music-src').appendChild(b);
   });
   renderSrc();
