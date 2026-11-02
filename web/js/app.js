@@ -125,6 +125,7 @@
       $('update-detail').textContent = s.notes || '热更装不下该版本的原生改动，请覆盖安装最新 APK 后再检查更新。';
     } else if (s.state === 'error') {
       busy = false; pending = false; retryAt = Date.now() + 60000; $('update-title').textContent = '本次更新未完成'; $('update-detail').textContent = s.msg || '请稍后重试，当前版本仍可使用。';
+      reportEvent('update', s.msg || '更新失败');
       if (apkBundled) { pending = true; apkPending = false; $('update-apply').hidden = false; $('update-apply').textContent = '改为仅更新网页资源'; }
     }
   };
@@ -179,6 +180,40 @@
   $('update-open').addEventListener('click', updateCheck);
   $('settings-update').addEventListener('click', function () { $('settings').close(); updateCheck(); });
   $('update-apply').addEventListener('click', function () { apply(false); });
+
+  // ===== 一键上传日志（设置页）：上传成功给链接，失败给全文复制 =====
+  function reportEvent(tag, message) { try { if (bridge && bridge.logEvent) bridge.logEvent(tag, String(message).slice(0, 300)); } catch (e) { } }
+  window.__logUploadStatus = function (s) {
+    var r = $('log-result'), copy = $('log-copy');
+    if (s.state === 'logs-ok') {
+      window.__lastLogText = s.text;
+      r.textContent = '上传成功！把下面的链接发给开发者即可：\n' + s.url;
+      copy.hidden = false;
+      reportEvent('diag', '日志上传成功 ' + s.url);
+    } else {
+      window.__lastLogText = s.text || '';
+      r.textContent = '上传失败（' + (s.error || '未知原因') + '，多为日志站被网络屏蔽）。点下方按钮复制全文，直接粘贴给开发者：';
+      copy.hidden = !window.__lastLogText;
+      if (!window.__lastLogText) r.textContent += '\n（日志内容为空）';
+    }
+  };
+  $('log-upload').addEventListener('click', function () {
+    $('log-result').textContent = '正在采集并上传日志…（崩溃、事件、系统日志）';
+    $('log-copy').hidden = true;
+    reportEvent('diag', '手动上传日志');
+    if (bridge && bridge.uploadLogs) bridge.uploadLogs('unused');
+    else $('log-result').textContent = '当前 APK 版本过旧，不支持日志上传，请先更新 APK。';
+  });
+  $('log-copy').addEventListener('click', function () {
+    var text = window.__lastLogText || '';
+    var area = document.createElement('textarea');
+    area.value = text; area.style.position = 'fixed'; area.style.opacity = '0';
+    document.body.appendChild(area); area.select();
+    var ok = false; try { ok = document.execCommand('copy'); } catch (e) { }
+    area.remove();
+    $('log-result').textContent += ok ? '" + bs + "n✓ 已复制全文，去粘贴给开发者即可。' : '" + bs + "n复制失败：长按下文手动选择复制。';
+    if (!ok && window.__lastLogText) $('log-result').textContent += '" + bs + "n——日志全文——" + bs + "n' + window.__lastLogText.slice(0, 6000);
+  });
   $('settings-exit').addEventListener('click', function () { if (bridge) bridge.exitApp(); else $('settings').close(); });
   window.TVHome = { back: function () { if ($('drama-player-dialog').open) $('drama-player-dialog').close(); else if ($('drama-dialog').open) $('drama-dialog').close(); else if ($('deal-dialog') && $('deal-dialog').open) $('deal-dialog').close(); else if ($('vod-dialog').open) window.Vod.back(); else if ($('music-dialog') && $('music-dialog').open) window.Music.back(); else if ($('bookmarks-dialog').open) $('bookmarks-dialog').close(); else if ($('settings').open) $('settings').close(); else if (window.Netdisk && window.Netdisk.back()) return; else if (bridge && confirm('退出搜看？')) bridge.exitApp(); } };
   setMode(new URLSearchParams(window.location.search).get('tab') === 'quark' ? 'quark' : 'web'); showPrivacy();

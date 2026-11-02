@@ -47,10 +47,14 @@ public class MainActivity extends Activity {
     private static final String API_RELEASE = "https://api.github.com/repos/gitHubLinHai/TV/contents/release/";
 
     private static final String ORIGIN = "https://app.tv.local/";
-    private static final int SHELL_VERSION = 29;
+    private static final int SHELL_VERSION = 30;
     private final ExecutorService vodPool = Executors.newFixedThreadPool(2);
     private final ExecutorService netdiskPool = Executors.newFixedThreadPool(3);
     private static final AtomicBoolean UPDATING = new AtomicBoolean();
+    /** 运行事件环形缓冲：网页层关键失败点经 logEvent 上报，随日志一键上传；同时追加到 files/log_events.txt。 */
+    private static final java.util.ArrayDeque<String> logEvents = new java.util.ArrayDeque<>();
+    private static volatile java.io.File logEventsFile;
+    private static final String LN = System.getProperty("line.separator");
     private WebView web;
     private String pending4kvmId;
     private File wwwDir;
@@ -76,6 +80,13 @@ public class MainActivity extends Activity {
             if (previous != null) previous.uncaughtException(t, e);
         });
         PrivacyState.init(this);
+        logEventsFile = new File(getFilesDir(), "log_events.txt");
+        try { // 载入历史事件（保留最近 150 条）并截断文件，避免无限增长
+            java.util.List<String> lines = new java.util.ArrayList<>(java.nio.file.Files.readAllLines(logEventsFile.toPath()));
+            if (lines.size() > 150) lines = new java.util.ArrayList<>(lines.subList(lines.size() - 150, lines.size()));
+            synchronized (logEvents) { logEvents.clear(); logEvents.addAll(lines); }
+            java.nio.file.Files.write(logEventsFile.toPath(), lines);
+        } catch (Exception ignored) { }
         if (PrivacyState.enabled) getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
         WebView.setWebContentsDebuggingEnabled((getApplicationInfo().flags & 2) != 0);
         wwwDir = new File(getFilesDir(), "www");
@@ -252,6 +263,17 @@ public class MainActivity extends Activity {
         }
     }
 
+    static void appendEvent(String tag, String message) {
+        String line = android.text.format.DateFormat.format("MM-dd HH:mm:ss", System.currentTimeMillis())
+                + " " + (tag == null ? "?" : tag) + " " + (message == null ? "" : message.replace("\n", " ").trim());
+        if (line.length() > 400) line = line.substring(0, 400);
+        synchronized (logEvents) {
+            logEvents.addLast(line);
+            while (logEvents.size() > 150) logEvents.removeFirst();
+        }
+        java.io.File f = logEventsFile;
+        if (f != null) try (java.io.FileWriter w = new java.io.FileWriter(f, true)) { w.write(line + "\n"); } catch (Exception ignored) { }
+    }
     private void jsCallback(final String cb, final JSONObject obj) {
         runOnUiThread(new Runnable() {
             public void run() {
@@ -425,6 +447,83 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public boolean supportsResume() { return true; }
 
+
+        /** 网页层上报关键事件（更新失败/片源失败/播放失败等），供一键上传日志。 */
+        @JavascriptInterface
+        public void logEvent(String tag, String message) { MainActivity.appendEvent(tag, message); }
+
+        /** 一键上传日志：应用信息 + 上次崩溃 + 运行事件 + 本进程 logcat 尾部，传公共粘贴服务；失败回传全文供复制。 */
+        @JavascriptInterface
+        public void uploadLogs(final String cb) {
+            new Thread(new Runnable() { public void run() {
+                JSONObject o = new JSONObject();
+                try {
+                    String text = collectLogText();
+                    String[] err = {null};
+                    String url = postPaste("https://dpaste.com/api/v2/", "dpaste", text, err);
+                    if (url == null) url = postPaste("https://paste.rs/", null, text, err);
+                    if (url != null) o.put("state", "logs-ok").put("url", url);
+                    else o.put("state", "logs-fail").put("error", err[0] == null ? "日志服务均不可达" : err[0]);
+                    o.put("text", text);
+                } catch (Exception ex) {
+                    try { o.put("state", "logs-fail").put("error", String.valueOf(ex)); } catch (Exception ignored) { }
+                }
+                final JSONObject payload = o;
+                runOnUiThread(() -> { if (web != null && !isFinishing()) web.evaluateJavascript(
+                        "window.__logUploadStatus && window.__logUploadStatus(" + payload.toString() + ")", null); });
+            }}).start();
+        }
+
+        private String collectLogText() {
+            StringBuilder b = new StringBuilder();
+            b.append("== 搜看诊断日志 ==").append(LN);
+            try {
+                b.append("app: ").append(getPackageManager().getPackageInfo(getPackageName(), 0).versionName)
+                        .append(" code ").append(packageVersionCode())
+                        .append(" 壳").append(SHELL_VERSION)
+                        .append(" 网页层 ").append(activeName()).append('(').append(activeCode()).append(')').append(LN);
+            } catch (Exception ignored) { }
+            b.append("device: ").append(android.os.Build.MANUFACTURER).append(' ').append(android.os.Build.MODEL)
+                    .append(" Android ").append(android.os.Build.VERSION.RELEASE).append(" (API ").append(android.os.Build.VERSION.SDK_INT).append(')').append(LN);
+            b.append("time: ").append(android.text.format.DateFormat.format("yyyy-MM-dd HH:mm:ss", System.currentTimeMillis())).append(LN).append(LN);
+            b.append("== 上次崩溃 ==").append(LN);
+            try { b.append(new String(java.nio.file.Files.readAllBytes(new File(getFilesDir(), "last_crash.txt").toPath()), java.nio.charset.StandardCharsets.UTF_8)); } catch (Exception e) { b.append("(无)").append(LN); }
+            b.append(LN).append("== 运行事件（最近） ==").append(LN);
+            synchronized (MainActivity.logEvents) { for (String line : MainActivity.logEvents) b.append(line).append(LN); }
+            b.append(LN).append("== logcat 尾部（本进程） ==").append(LN);
+            try {
+                Process proc = Runtime.getRuntime().exec(new String[]{"logcat", "-d", "-v", "time", "-t", "1200"});
+                try (java.io.InputStream in = proc.getInputStream()) {
+                    java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+                    byte[] buffer = new byte[8192]; int n;
+                    while ((n = in.read(buffer)) != -1) { if (bytes.size() + n > 262144) break; bytes.write(buffer, 0, n); }
+                    b.append(new String(bytes.toByteArray(), java.nio.charset.StandardCharsets.UTF_8));
+                }
+                proc.destroy();
+            } catch (Exception e) { b.append("(logcat 不可读: ").append(e).append(')').append(LN); }
+            return b.toString();
+        }
+
+        /** 粘贴服务：paste.rs 接收纯正文返回 URL；dpaste.org 走表单（一周有效）。 */
+        private String postPaste(String endpoint, String mode, String text, String[] err) {
+            try {
+                HttpURLConnection c = (HttpURLConnection) new java.net.URL(endpoint).openConnection();
+                c.setRequestMethod("POST"); c.setConnectTimeout(8000); c.setReadTimeout(20000); c.setDoOutput(true);
+                c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) TV-Diag");
+                byte[] body;
+                if ("dpaste".equals(mode)) {
+                    String form = "content=" + java.net.URLEncoder.encode(text, "UTF-8") + "&format=url&expires=604800";
+                    body = form.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                    c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                } else body = text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                try (java.io.OutputStream out = c.getOutputStream()) { out.write(body); }
+                if (c.getResponseCode() / 100 != 2) throw new java.io.IOException("HTTP " + c.getResponseCode());
+                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(c.getInputStream(), java.nio.charset.StandardCharsets.UTF_8));
+                String line = reader.readLine(); reader.close();
+                if (line != null && line.startsWith("https://")) return line.trim();
+                throw new java.io.IOException("响应无链接: " + (line == null ? "空" : line.trim()));
+            } catch (Exception e) { err[0] = endpoint + ": " + e; return null; }
+        }
 
         /** 当前生效资源版本，供 JS 显示在家长中心 */
         @JavascriptInterface

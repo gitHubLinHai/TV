@@ -168,6 +168,7 @@
     var song=attempt.song,chain=attempt.chain;
     if(i>=chain.length){
       var msg='《'+song.name+'》各音源都不可播放（可能需要会员或已下架）';
+      try{if(window.TVBridge&&TVBridge.logEvent)TVBridge.logEvent('music',msg);}catch(e){}
       attempt=null;
       if(attemptQueue){status('《'+song.name+'》无法播放，已自动跳过');playing=null;nextSong();return;}
       playing=null;highlightPlaying();status(msg);return;

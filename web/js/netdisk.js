@@ -17,7 +17,7 @@
       return new Promise(function (resolve, reject) {
         var id = 'n' + (++sequence);
         var timer = setTimeout(function () { delete pending[id]; reject(new Error('网盘服务响应超时，请重试')); }, 35000);
-        pending[id] = function (r) { clearTimeout(timer); if (r.ok) resolve(r.data); else reject(new Error(r.error || '网盘请求失败')); };
+        pending[id] = function (r) { clearTimeout(timer); if (r.ok) resolve(r.data); else { var e = new Error(r.error || '网盘请求失败'); if (r.code) e.code = r.code; reject(e); } };
         bridge.netdiskRequest(id, JSON.stringify({ action: action, args: args }));
       });
     }
@@ -30,7 +30,11 @@
   }
   window.__netdiskReply = function (id, reply) { if (pending[id]) { var cb = pending[id]; delete pending[id]; cb(reply); } };
   function checked(payload) {
-    if (!payload || Number(payload.status) >= 400 || (payload.code != null && Number(payload.code) !== 0)) throw new Error(payload && (payload.message || payload.msg) || '网盘接口未返回有效数据');
+    if (!payload || Number(payload.status) >= 400 || (payload.code != null && Number(payload.code) !== 0)) {
+      var err = new Error(payload && (payload.message || payload.msg) || '网盘接口未返回有效数据');
+      err.code = payload ? (payload.code != null ? payload.code : payload.status) : 0; // 夸克登录失效常见 401/31001
+      throw err;
+    }
     return payload.data == null ? payload : payload.data;
   }
   function shareId(value) {
@@ -300,7 +304,20 @@
       });
     } else action = rpc('sharePreview', { pwd_id: item.id, stoken: item.stoken, fid: file.fid, fid_token: file.share_fid_token }).then(function (payload) { var data = checked(payload); return data.play_info && data.play_info.url || ''; });
     action.then(function (url) { if (run === generation && selected === file) startVideo(url, item, file, !save); })
-      .catch(function (e) { if (run === generation && selected === file) $('media-status').textContent = e.message + (save ? '。请检查登录状态或稍后重试。' : '。此分享未能提供免登录预览；可从上方登录夸克后重试，完整播放需明确选择转存。'); })
+      .catch(function (e) {
+        if (run !== generation || selected !== file) return;
+        var code = e && e.code, msg = (e && e.message) || '播放失败';
+        try{if(window.TVBridge&&TVBridge.logEvent)TVBridge.logEvent('netdisk','播放失败(转存='+save+') 码='+code+' '+msg);}catch(e2){}
+        var authFail = save && (Number(code) === 401 || Number(code) === 31001 || /登录|login/i.test(msg));
+        if (authFail) {
+          if (typeof refreshAccount === 'function') refreshAccount();
+          $('media-status').textContent = msg + '。登录可能已过期：请点上方“登录夸克”重新登录，回来后点重试即可。';
+        } else if (save) {
+          $('media-status').textContent = msg + (code ? '（码 ' + code + '）' : '') + '。这不是登录问题：可稍后点重试，或把画质切到“原文件（消耗流量较多）”用下载直链播放。';
+        } else {
+          $('media-status').textContent = msg + '。此分享未能提供免登录预览；可从上方登录夸克后重试，完整播放需明确选择转存。';
+        }
+      })
       .finally(function () { $('media-save').disabled = false; $('media-retry').disabled = false; });
   }
   function back() {

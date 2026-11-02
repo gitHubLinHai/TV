@@ -246,6 +246,7 @@
       var snapCat=catName||(categories[currentCat]&&categories[currentCat][0])||'';
       var snapKey='tv_snap_'+((plan&&plan.q)?('q_'+encodeURIComponent(plan.q)):snapCat?encodeURIComponent(snapCat):String(target).slice(0,80));
       if(ok===0&&!allItems.length){
+        try{if(window.TVBridge&&TVBridge.logEvent)TVBridge.logEvent('vod','片单为空 '+(catName||path)+' '+(diag.length?diag.join(';'):'无诊断'));}catch(e){}
         if(!retry){ // 全源未返：4 秒后跳过缓存自动重试一次
           status('各片源都还没返回：4 秒后自动重试'+(diag.length?" · "+diag.join("\uFF1B"):""));
           setTimeout(function(){ if(run===epoch) loadList(target,true,plan,keepScroll,true); },4000);
