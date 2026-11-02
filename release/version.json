@@ -1,14 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 157,
-  "versionName": "1.0.57",
+  "versionCode": 158,
+  "versionName": "1.0.58",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.57.wgt",
-  "wgtSize": 63021,
-  "wgtSha256": "fb939ae16359478f585c1c7797a6aa363f484f6b57d618956586d6e8dee8269a",
-  "notes": "播放器爱奇艺化：方向改锁定当前方向的锁按钮、倍速提示移顶部不挡画面、滑动快进随手速快慢缩放；影视页记住上次分类",
-  "apk": "TV-v1.0.57.apk",
-  "apkCode": 157,
-  "apkSize": 3474098,
-  "apkSha256": "a14a56ee758122413c341571c86204e24840a0a21be04752225b799d133428c0"
+  "wgt": "TV-v1.0.58.wgt",
+  "wgtSize": 64498,
+  "wgtSha256": "ac95e430c98519fd1d2f203c9860961cfdc1fa37cb0a92f7f02042c24ddc9810",
+  "notes": "新增设置-一键上传日志（采集版本/崩溃/运行事件/系统日志，自动上传返回链接，失败可复制全文）；网盘播放失败提示按真实原因分流不再一律让查登录",
+  "apk": "TV-v1.0.58.apk",
+  "apkCode": 158,
+  "apkSize": 3478194,
+  "apkSha256": "7b144dd87546adaa4b24dfbbf60ac54e91f92969f4a915c779bc2d649bb11bed"
 }
