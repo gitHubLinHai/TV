@@ -183,8 +183,23 @@
 
   // ===== 一键上传日志（设置页）：上传成功给链接，失败给全文复制 =====
   function reportEvent(tag, message) { try { if (bridge && bridge.logEvent) bridge.logEvent(tag, String(message).slice(0, 300)); } catch (e) { } }
+  // 令牌配置：保存后提示已启用直传
+  $('diag-token-save').addEventListener('click', function () {
+    if (!bridge || !bridge.diagToken) { $('log-result').textContent = '当前 APK 过旧，请先更新。'; return; }
+    var v = $('diag-token').value.trim();
+    bridge.diagToken(v);
+    $('log-result').textContent = v ? '令牌已保存：之后一键上传会直接写入你的 TV-logs 仓库。' : '令牌已清除：将改用公共日志站。';
+    $('diag-token').value = '';
+  });
   window.__logUploadStatus = function (s) {
     var r = $('log-result'), copy = $('log-copy');
+    if (s.state === 'logs-git') {
+      window.__lastLogText = s.text || '';
+      r.textContent = '已上传到你的日志仓库：' + s.path + ' — 直接告诉开发者"刚上传了日志"即可，无需发链接。';
+      copy.hidden = false;
+      reportEvent('diag', '日志已直传仓库 ' + s.path);
+      return;
+    }
     if (s.state === 'logs-ok') {
       window.__lastLogText = s.text;
       r.textContent = '上传成功！把下面的链接发给开发者即可：\n' + s.url;

@@ -47,7 +47,7 @@ public class MainActivity extends Activity {
     private static final String API_RELEASE = "https://api.github.com/repos/gitHubLinHai/TV/contents/release/";
 
     private static final String ORIGIN = "https://app.tv.local/";
-    private static final int SHELL_VERSION = 30;
+    private static final int SHELL_VERSION = 31;
     private final ExecutorService vodPool = Executors.newFixedThreadPool(2);
     private final ExecutorService netdiskPool = Executors.newFixedThreadPool(3);
     private static final AtomicBoolean UPDATING = new AtomicBoolean();
@@ -452,6 +452,16 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void logEvent(String tag, String message) { MainActivity.appendEvent(tag, message); }
 
+        /** 日志上传令牌（一次性配置）：仅对 gitHubLinHai/TV-logs 仓库有写权限的 GitHub 令牌，存本机偏好。传空串清除。 */
+        @JavascriptInterface
+        public void diagToken(String value) {
+            getSharedPreferences("tv_diag", MODE_PRIVATE).edit().putString("token", value == null ? "" : value.trim()).apply();
+        }
+        @JavascriptInterface
+        public String diagTokenSet() {
+            return getSharedPreferences("tv_diag", MODE_PRIVATE).getString("token", "").isEmpty() ? "false" : "true";
+        }
+
         /** 一键上传日志：应用信息 + 上次崩溃 + 运行事件 + 本进程 logcat 尾部，传公共粘贴服务；失败回传全文供复制。 */
         @JavascriptInterface
         public void uploadLogs(final String cb) {
@@ -459,6 +469,11 @@ public class MainActivity extends Activity {
                 JSONObject o = new JSONObject();
                 try {
                     String text = collectLogText();
+                    String token = getSharedPreferences("tv_diag", MODE_PRIVATE).getString("token", "");
+                    if (!token.isEmpty()) {
+                        String path = postGitHubLog(token, text);
+                        if (path != null) { o.put("state", "logs-git").put("path", path); jsResult(payloadOf(o)); return; }
+                    }
                     String[] err = {null};
                     String url = postPaste("https://dpaste.com/api/v2/", "dpaste", text, err);
                     if (url == null) url = postPaste("https://paste.rs/", null, text, err);
@@ -472,6 +487,36 @@ public class MainActivity extends Activity {
                 runOnUiThread(() -> { if (web != null && !isFinishing()) web.evaluateJavascript(
                         "window.__logUploadStatus && window.__logUploadStatus(" + payload.toString() + ")", null); });
             }}).start();
+        }
+
+        /** 上传到你的日志仓库 TV-logs（Contents API，文件名含时间与机型）；成功返回文件路径，令牌无效返回 null 走兜底。 */
+        private String postGitHubLog(String token, String text) {
+            try {
+                String stamp = android.text.format.DateFormat.format("MMdd-HHmmss", System.currentTimeMillis()).toString();
+                String model = android.os.Build.MODEL == null ? "dev" : android.os.Build.MODEL.replaceAll("[^A-Za-z0-9.-]", "-");
+                if (model.length() > 16) model = model.substring(0, 16);
+                String name = "log-" + stamp + "-" + model + ".txt";
+                JSONObject body = new JSONObject();
+                body.put("message", "diag " + stamp);
+                body.put("content", android.util.Base64.encodeToString(text.getBytes(java.nio.charset.StandardCharsets.UTF_8), android.util.Base64.NO_WRAP));
+                HttpURLConnection c = (HttpURLConnection) new java.net.URL("https://api.github.com/repos/gitHubLinHai/TV-logs/contents/logs/" + name).openConnection();
+                c.setRequestMethod("PUT"); c.setConnectTimeout(10000); c.setReadTimeout(20000); c.setDoOutput(true);
+                c.setRequestProperty("Authorization", "Bearer " + token);
+                c.setRequestProperty("Accept", "application/vnd.github+json");
+                c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) TV-Diag");
+                c.setRequestProperty("Content-Type", "application/json");
+                try (java.io.OutputStream out = c.getOutputStream()) { out.write(body.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)); }
+                int code = c.getResponseCode();
+                if (code / 100 == 2) return "logs/" + name;
+                android.util.Log.w("TVDiag", "github log upload HTTP " + code);
+            } catch (Exception e) { android.util.Log.w("TVDiag", "github log upload failed", e); }
+            return null;
+        }
+
+        private JSONObject payloadOf(JSONObject o) { return o; }
+        private void jsResult(final JSONObject payload) {
+            runOnUiThread(() -> { if (web != null && !isFinishing()) web.evaluateJavascript(
+                    "window.__logUploadStatus && window.__logUploadStatus(" + payload.toString() + ")", null); });
         }
 
         private String collectLogText() {

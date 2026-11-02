@@ -294,3 +294,9 @@
 2. 真机端到端验证：探针打开设置→上传→返回 https://dpaste.com/xxx →测试进程拉取 407KB，四段内容（诊断头/探针事件/崩溃段/logcat 段）全部命中。
 3. 网盘播放失败提示分流（用户报"登录了还让查看登录状态"）：checked() 抛错附带错误码；播放 catch 仅在登录类错误（401/31001/文案含"登录"）提示重新登录并自动刷新账号状态，其余明示"这不是登录问题"并给出重试/换原文件画质指引——此前所有转存路径失败一律追加"请检查登录状态"误导用户。
 4. 自伤两处（当日修）：heredoc 反斜杠被吃致 app.js/MainActivity 字符串字面量断行——app.js 解析失败会让整个应用白屏（版本标签停在"网页预览"即此症状），全部改 Write 工具/chr() 构造并 node --check 验证；dpaste.org/api/2 已 404 弃用换 dpaste.com。
+
+
+补充（第三十九轮）：日志直传 GitHub 仓库（v1.0.59 / 壳 31）
+1. 用户要求"直接传到 git 里的 text 文件，开发者直接读取"——已实现：创建私有仓库 gitHubLinHai/TV-logs；应用设置页新增"日志直传仓库令牌"（一次性配置，存本机偏好 tv_diag/token）；配置后一键上传经 Contents API PUT 到 TV-logs/logs/log-<时间>-<机型>.txt，面板显示文件路径（无需再发链接）；未配置令牌时回退 dpaste.com 链接，再回退全文复制。
+2. 令牌不打包进 APK（可被提取）：需用户在 GitHub 网页生成"仅 TV-logs、Contents 读写"的 fine-grained 令牌粘进设置——安全模型为最小权限，泄露也仅能写日志仓库。
+3. 真机端到端：探针借本机凭证令牌（root 推入 files/diag_token.txt，用后即删）→ 设置上传 → 仓库落盘 logs/log-1102-034251-sdk-gphone-x86-6.txt（260KB）→ 开发者侧 Contents API 直接读取，四段内容（诊断头/探针事件/崩溃/logcat）全部命中。
