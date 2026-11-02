@@ -97,7 +97,8 @@
   }
   function renderQueue(){
     var all=$('music-playall');
-    all.textContent=queue.on?'停止队列':'▶ 全部播放';
+    all.textContent=queue.on?'■':'▶';
+    all.setAttribute('aria-label',queue.on?'停止队列':'全部播放');
     all.classList.toggle('selected',queue.on);
     $('music-loop').classList.toggle('selected',queue.loop);
     $('music-single').classList.toggle('selected',queue.single);

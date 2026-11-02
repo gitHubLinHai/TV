@@ -155,36 +155,22 @@ header .bookmarks-button{margin-left:auto;margin-right:8px;padding:8px;font-size
 #music-queue .queue-btn{background:transparent;border:1px solid #3d4a44;color:#a9b8ad;padding:7px 13px;font-size:12px;border-radius:16px}
 #music-queue .queue-btn.selected{border-color:var(--lime);color:#d8f5b0;background:#a3e63516;font-weight:600}
 
-/* v1.0.51 音乐页酷狗风：深蓝渐变氛围、白色选中胶囊、播放行律动条、底部正在播放卡 */
-#music-dialog .page-scroll{background:linear-gradient(180deg,#1c2447 0%,#141a33 260px,#0d1219 100%)}
-#music-dialog h2{font-size:24px;background:linear-gradient(90deg,#ffffff,#9db4ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-#music-dialog small{color:#8a94b8}
-#music-ranks button{background:#232b4d;color:#aab4dd;border:1px solid #ffffff10}
-#music-ranks button:active{background:#2d3760}
-#music-ranks button.selected{background:#fff;color:#1a2140;border-color:#fff;font-weight:600;box-shadow:0 4px 16px #ffffff26}
-#music-src button,#music-queue .queue-btn{background:#ffffff08;border:1px solid #ffffff1f;color:#aab4dd}
-#music-src button.selected,#music-queue .queue-btn.selected{background:#ffffff1c;border-color:#fff;color:#fff;font-weight:600}
-.chip-block-label{color:#7d88ad}
-.song-row{background:#ffffff05;border:1px solid #ffffff08}
-.song-row b{background:#232b4d;color:#8d99c4}
-#music-list .song-row:nth-of-type(-n+3) b{background:#fff;color:#1a2140}
-.song-row.playing{background:linear-gradient(90deg,#26325c,#1a2140);border-color:#3c4a7d;box-shadow:none}
-.song-row.playing b{background:#fff;color:#1a2140}
-.song-row.playing .song-info strong{color:#fff}
-.song-row.playing .song-info::after{content:"♪ 正在播放";color:#9db4ff}
-#music-status{color:#8a94b8}
-#music-now{position:sticky;bottom:10px;z-index:9;display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 16px;border-radius:16px;background:linear-gradient(120deg,#2a3566,#1c2447);border:1px solid #ffffff1c;box-shadow:0 12px 30px #00000080}
-#music-now .now-copy{min-width:0}
-#music-now strong{display:block;font-size:14px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:64vw}
-#music-now small{color:#9db4ff;font-size:11px}
-.eq{display:flex;align-items:flex-end;gap:2px;height:16px;width:16px;flex:none}
-.eq i{flex:1;background:#8fa8ff;animation:eq .9s ease-in-out infinite;border-radius:1px}
-.eq i:nth-child(2){animation-delay:.25s;background:#c9d6ff}
-.eq i:nth-child(3){animation-delay:.5s;background:#fff}
-@keyframes eq{0%,100%{height:30%}50%{height:100%}}
+
 .song-row.playing .song-info::after{content:"♪ 正在播放";font-size:10px;color:var(--lime);margin-top:2px}
 .queue-btn{background:#2e3833;color:#d6e4d4;padding:9px 14px;border-radius:18px;font-size:12px;border:1px solid #ffffff0a}
 .queue-btn.selected{background:var(--lime);color:#24311d;font-weight:600}
 
 
 .vod-cover .cov-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#5f6f66;background:linear-gradient(145deg,#1a221e,#12181a)}
+/* v1.0.54 队列按钮符号化（▶/■、🔁、🔂）与正在播放卡：保持原有深色+黄绿主题 */
+#music-queue .queue-btn{font-size:18px;line-height:1;min-width:52px;text-align:center}
+#music-queue .queue-btn.selected{background-color:var(--lime);color:#24311d;font-weight:600}
+#music-now{position:sticky;bottom:10px;z-index:9;display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 16px;border-radius:16px;background-color:#1d2833;border:1px solid #ffffff14;box-shadow:0 12px 30px #00000080}
+#music-now .now-copy{min-width:0}
+#music-now strong{display:block;font-size:14px;color:#edf3ea;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:64vw}
+#music-now small{color:#89938f;font-size:11px}
+.eq{display:flex;align-items:flex-end;gap:2px;height:16px;width:16px;flex:none}
+.eq i{flex:1;background:var(--lime);animation:eq .9s ease-in-out infinite;border-radius:1px}
+.eq i:nth-child(2){animation-delay:.25s;background:#cbea7a}
+.eq i:nth-child(3){animation-delay:.5s;background:#e7ffb0}
+@keyframes eq{0%,100%{height:30%}50%{height:100%}}
