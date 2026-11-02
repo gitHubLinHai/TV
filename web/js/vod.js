@@ -190,7 +190,7 @@
     if(!allItems.length)status("来源没有返回片单，可能无结果或页面结构已变化；"+diag.join("\uFF1B"));
     else status(statusFor()+" · "+diag.join("\uFF1B"));
   }
-  function loadList(target,bypass,plan,keepScroll){
+  function loadList(target,bypass,plan,keepScroll,retry){
     var run=++epoch;playing=false;showList();path=target;viewIndex=0;allItems=[];siteNextRefs=[];totalSitePages=0;sitePageItems=0;loadDiag=[];loadingMore=false;seenTitles=Object.create(null);noCat=[];$('vod-pager').hidden=true;
     var enabled=enabledSources();
     if(plan)lastPlan=plan;else plan=lastPlan;
@@ -241,8 +241,28 @@
       var ok=results.filter(function(r){return !r.error;}).length;
       applyResults(results.filter(function(r){return !r.error;}),false);
       var diag=results.filter(function(r){return r.error;}).map(function(r){return r.name+"\uFF1A"+r.error;});
-      if(ok===0&&!allItems.length)status("来源没有返回片单，可能无结果或页面结构已变化"+(diag.length?"\uFF1B"+diag.join("\uFF1B"):""));
-      else status(statusFor()+(ok>1?" · "+ok+"源":"")+(diag.length?" · "+diag.join("\uFF1B"):""));
+      // 片单快照：成功时留存最近一份；全源失败（网络瞬断高发）先自动重试一次，仍失败回退快照展示。
+      // 键取当前分类芯片名（刷新时 plan 为空但分类不变，须与首次成功保存同键，统一编码）。
+      var snapCat=catName||(categories[currentCat]&&categories[currentCat][0])||'';
+      var snapKey='tv_snap_'+((plan&&plan.q)?('q_'+encodeURIComponent(plan.q)):snapCat?encodeURIComponent(snapCat):String(target).slice(0,80));
+      if(ok===0&&!allItems.length){
+        if(!retry){ // 全源未返：4 秒后跳过缓存自动重试一次
+          status('各片源都还没返回：4 秒后自动重试'+(diag.length?" · "+diag.join("\uFF1B"):""));
+          setTimeout(function(){ if(run===epoch) loadList(target,true,plan,keepScroll,true); },4000);
+          return;
+        }
+        var snap=null;
+        try{snap=JSON.parse(localStorage.getItem(snapKey)||'null');}catch(e){}
+        if(snap&&snap.items&&snap.items.length&&Date.now()-snap.at<7*86400000){
+          // 快照是裸条目（非源包），直接合并渲染，不能走 applyResults
+          snap.items.forEach(function(x){if(seenTitles[x.key])return;seenTitles[x.key]=true;allItems.push(x);});
+          if(allItems.length){showView();renderPager();}
+          status('网络不佳：先显示上次成功获取的片单（'+new Date(snap.at).toLocaleString()+'） · 点"刷新"重试');
+        } else status("来源没有返回片单，可能无结果或页面结构已变化"+(diag.length?"\uFF1B"+diag.join("\uFF1B"):""));
+      } else {
+        status(statusFor()+(ok>1?" · "+ok+"源":"")+(diag.length?" · "+diag.join("\uFF1B"):""));
+        try{localStorage.setItem(snapKey,JSON.stringify({at:Date.now(),items:allItems.slice(0,300)}));}catch(e){}
+      }
       if(!keepScroll)scroller.scrollTop=0;
     });
   }
