@@ -342,8 +342,30 @@
     if(playing||!detail)return;var run=++epoch,selected=detail;playing=true;currentEpisode=ep;status('正在获取 '+ep.title+' 的播放地址…');
     var directPlay=function(url,referer){
       try{if(window.PlayHistory)window.PlayHistory.add({kind:'vod',title:(selected.title||'')+' · '+ep.title,epTitle:ep.title,vod:{path:selected.itemPath||detail.itemPath||'',item:selected.itemRef||{path:selected.itemPath||detail.itemPath,title:selected.title,host:selected.host,adapter:selected.adapter,src:selected.src}}});}catch(e){}
-      if(bridge){if(!bridge.playVodVideo)throw new Error('请安装新版 APK 播放此来源');try{if(window.__reportEvent)window.__reportEvent('vod','播放 '+(selected.title||'').slice(0,24)+' '+ep.title);}catch(e){}bridge.playVodVideo(url,selected.title+' · '+ep.title,'vod:'+selected.id+':'+ep.title,referer||'');status('已打开内置播放器，返回后可继续选集或切换线路');return Promise.resolve();}
-      else {var video=$('vod-video');video.hidden=false;video.src=url;return video.play().catch(function(){status('请点击视频播放；此来源在 APK 内使用原生播放器。');});}
+      var nativePlay=function(reason){
+        if(!bridge||!bridge.playVodVideo)throw new Error('请安装新版 APK 播放此来源');
+        try{if(window.__reportEvent)window.__reportEvent('vod','原生播放 '+(selected.title||'').slice(0,24)+' '+ep.title+(reason?'('+reason+')':''));}catch(e){}
+        bridge.playVodVideo(url,selected.title+' · '+ep.title,'vod:'+selected.id+':'+ep.title,referer||'');
+        status('已用原生播放器打开（'+(reason||'全屏')+'），返回后可继续选集或切换线路');
+      };
+      // APK 内嵌播放（与网页版同款样式）：详情页内直接播；失败自动切原生播放器，播完自动下一集。
+      var video=$('vod-video');video.hidden=false;video.controls=true;video.src=url;
+      var bar=$('vod-native-fallback');
+      if(!bar){bar=document.createElement('button');bar.id='vod-native-fallback';bar.type='button';bar.className='secondary';bar.textContent='⛶ 原生播放器（手势/倍速/字幕）';video.insertAdjacentElement('afterend',bar);}
+      bar.hidden=false;bar.onclick=function(){try{nativePlay('全屏');}catch(e){status(e.message);}};
+      var fell=false;
+      var toNative=function(reason){if(fell)return;fell=true;try{nativePlay(reason);}catch(e){status(e.message);}};
+      video.onerror=function(){toNative('内嵌不支持');};
+      var guard=setTimeout(function(){if(video.readyState===0)toNative('内嵌超时');},8000);
+      var done=function(){clearTimeout(guard);video.removeEventListener('playing',done);};
+      video.addEventListener('playing',done);
+      video.onended=function(){ // 内嵌播完：有下一集自动连播，否则回详情
+        var eps=$('vod-episodes').children;
+        for(var i=0;i<eps.length;i++){if(eps[i].textContent.trim()===ep.title&&eps[i+1]){eps[i+1].click();status('自动播放下一集');return;}}
+        status('本集播放完毕');
+      };
+      try{if(window.__reportEvent)window.__reportEvent('vod','播放 '+(selected.title||'').slice(0,24)+' '+ep.title);}catch(e){}
+      return video.play().catch(function(){toNative('内嵌自动播放受限');return Promise.resolve();});
     };
     if(ep.direct)return directPlay(ep.url,'').catch(function(e){if(run===epoch)status(e.message);}).finally(function(){if(run===epoch)playing=false;});
     if(ep.resolve4kvm)return resolve4kvm(ep.path).then(function(reply){if(run!==epoch)return;return directPlay(reply.url,'');}).catch(function(e){if(run===epoch)status(e.message);}).finally(function(){if(run===epoch)playing=false;});
@@ -465,7 +487,7 @@
   $('vod-custom').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();customRefresh();}});
   if(!window.TVPrivacy.enabled){try{$('vod-custom').value=localStorage.getItem('tv_vod_custom')||'';}catch(e){}}
   $('vod-refresh').addEventListener('click',function(){if(detail){var item={path:detail.itemPath||('/voddetail/'+detail.id+'.html'),title:detail.title,host:detail.host,adapter:detail.adapter,src:detail.src};openDetail(item,true);}else loadList(path||categories[0][1],true,lastPlan&&lastPlan.cat?{cat:lastPlan.cat}:lastPlan);});
-  $('vod-back').addEventListener('click',function(){++epoch;playing=false;stop();showList();renderList();status('已返回原片单');document.querySelector('#vod-dialog .page-scroll').scrollTop=scroll;renderPager();});
+  $('vod-back').addEventListener('click',function(){++epoch;playing=false;stop();var v=$('vod-video');v.pause();v.removeAttribute('src');v.load();v.hidden=true;var bar=$('vod-native-fallback');if(bar)bar.hidden=true;showList();renderList();status('已返回原片单');document.querySelector('#vod-dialog .page-scroll').scrollTop=scroll;renderPager();});
   $('vod-routes').addEventListener('change',function(){++epoch;playing=false;stop();renderEpisodes();status('已切换线路，请选择剧集');});
   $('vod-video').addEventListener('error',function(){if($('vod-video').getAttribute('src'))status('网页预览未能播放此地址，请使用 APK 或切换线路。');});
   // 分页：中间内容区固定，一页 10 个，用上一页/下一页替换内容。

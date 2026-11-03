@@ -251,7 +251,6 @@
       time.textContent = new Date(entry.at).toLocaleString();
       row.appendChild(title); row.appendChild(time);
       row.addEventListener('click', function () {
-        if (!bridge) return;
         $('play-history-dialog').close();
         if (entry.kind === 'vod' && entry.vod) {
           if (window.Vod) { $('vod-open').click(); setTimeout(function () { window.Vod.openDetailFromHistory(entry); }, 400); }

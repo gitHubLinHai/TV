@@ -47,7 +47,7 @@ public class MainActivity extends Activity {
     private static final String API_RELEASE = "https://api.github.com/repos/gitHubLinHai/TV/contents/release/";
 
     private static final String ORIGIN = "https://app.tv.local/";
-    private static final int SHELL_VERSION = 31;
+    private static final int SHELL_VERSION = 32;
     private final ExecutorService vodPool = Executors.newFixedThreadPool(2);
     private final ExecutorService netdiskPool = Executors.newFixedThreadPool(3);
     private static final AtomicBoolean UPDATING = new AtomicBoolean();
@@ -118,6 +118,7 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        s.setMediaPlaybackRequiresUserGesture(false); // 详情页内嵌视频（网页版同款）点集即播，无需二次点击
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url.startsWith(ORIGIN)) return false;

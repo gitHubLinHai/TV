@@ -182,3 +182,7 @@ header .bookmarks-button{margin-left:auto;margin-right:8px;padding:8px;font-size
 .history-play-row strong{font-size:13px;font-weight:500;overflow-wrap:anywhere}
 .history-play-row small{font-size:10px;color:#7b8790}
 .history-play-row:active{background:#ffffff0d}
+
+/* v1.0.63 内嵌播放：原生切换按钮与视频区留白 */
+#vod-native-fallback{margin:10px 0 0;width:100%}
+#vod-video{margin:10px 0 0}
