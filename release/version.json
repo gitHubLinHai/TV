@@ -1,14 +1,14 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 162,
-  "versionName": "1.0.62",
+  "versionCode": 163,
+  "versionName": "1.0.63",
   "minShellVersion": 15,
-  "wgt": "TV-v1.0.62.wgt",
-  "wgtSize": 66906,
-  "wgtSha256": "91eefe78c50f3a64f5e8ff6dd1c70d23ca6fa7a2d2dfa20c6935c3337ac890e6",
-  "notes": "新增播放历史：影视与网盘视频播放后自动记录（最近 60 条，无痕不记录），影视页工具行新增“播放历史”入口，点击记录可跳回重播",
-  "apk": "TV-v1.0.60.apk",
-  "apkCode": 160,
-  "apkSize": 3478194,
-  "apkSha256": "72475b050b1f8457e3ae4f7e7dc2780e27032f74bc98a4102f8c4345c4fe1d6f"
+  "wgt": "TV-v1.0.63.wgt",
+  "wgtSize": 67823,
+  "wgtSha256": "e54389091d48d5f14fcbf085c2bbb939ded36b1c2b60c1e1a800ede69c36c6bc",
+  "notes": "播放历史修复（接口源记录失效/自动续播不触发/点击无反应三处）；APK 内嵌网页版同款播放：详情页直接播放，失败自动切原生播放器，播完自动下一集，可一键切原生（手势/倍速/字幕）",
+  "apk": "TV-v1.0.63.apk",
+  "apkCode": 163,
+  "apkSize": 3482290,
+  "apkSha256": "d56bc4ef2f9d8b5f28a0800eaf23474e83c117bfdc9c242a7db8c7ff858dd5b3"
 }
