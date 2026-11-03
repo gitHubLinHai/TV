@@ -254,7 +254,7 @@
         if (!bridge) return;
         $('play-history-dialog').close();
         if (entry.kind === 'vod' && entry.vod) {
-          if (window.Vod) { $('vod-open').click(); setTimeout(function () { window.Vod.openDetailFromHistory(entry.vod); }, 400); }
+          if (window.Vod) { $('vod-open').click(); setTimeout(function () { window.Vod.openDetailFromHistory(entry); }, 400); }
         } else if (entry.kind === 'netdisk' && entry.share) {
           var ev = document.getElementById('quark-open');
           if (ev) { ev.click(); setTimeout(function () { if (window.Netdisk && window.Netdisk.replayShare) window.Netdisk.replayShare(entry.share); }, 500); }
