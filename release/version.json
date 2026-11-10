@@ -6,5 +6,9 @@
   "wgt": "TV-v1.0.65.wgt",
   "wgtSize": 74378,
   "wgtSha256": "162ce291567f82bf2ae242a70c8773a9672d73009cac91e780274ac20534a9ff",
-  "notes": "网页搜索新增 Yandex 源（yandex.com，俄语/东欧内容检索，需设备可访问外网）"
+  "notes": "网页搜索新增 Yandex 源（yandex.com，俄语/东欧内容检索，需设备可访问外网）",
+  "apk": "TV-v1.0.65.apk",
+  "apkCode": 165,
+  "apkSize": 3490482,
+  "apkSha256": "d4403dcc5739bd70378f30b6178807c9d3a7505f1f247bcbf60bb1a3ac22ef46"
 }
