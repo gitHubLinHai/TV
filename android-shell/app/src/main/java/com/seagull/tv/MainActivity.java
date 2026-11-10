@@ -47,7 +47,7 @@ public class MainActivity extends Activity {
     private static final String API_RELEASE = "https://api.github.com/repos/gitHubLinHai/TV/contents/release/";
 
     private static final String ORIGIN = "https://app.tv.local/";
-    private static final int SHELL_VERSION = 32;
+    private static final int SHELL_VERSION = 33;
     private final ExecutorService vodPool = Executors.newFixedThreadPool(2);
     private final ExecutorService netdiskPool = Executors.newFixedThreadPool(3);
     private static final AtomicBoolean UPDATING = new AtomicBoolean();
@@ -342,6 +342,12 @@ public class MainActivity extends Activity {
             if(!id.matches("[a-zA-Z0-9_-]{1,40}")||url==null||url.length()>500)return;
             vodPool.execute(()->{JSONObject reply=new JSONObject();try{reply.put("ok",true);reply.put("data",DealHttp.fetch(url));}
                 catch(Exception e){try{reply.put("ok",false);reply.put("error",e.getMessage()==null?"订阅源连接失败":e.getMessage());}catch(Exception ignored){}}
+                runOnUiThread(()->{if(web!=null&&!isFinishing())web.evaluateJavascript("window.__dealReply && window.__dealReply("+JSONObject.quote(id)+","+reply.toString()+")",null);});});
+        }
+        @JavascriptInterface public void dealAggRequest(final String id,final String payload){
+            if(!id.matches("[a-zA-Z0-9_-]{1,40}")||payload==null||payload.length()>8192)return;
+            vodPool.execute(()->{JSONObject reply=new JSONObject();try{reply.put("ok",true);reply.put("data",DealAgg.fetchAll(new org.json.JSONArray(payload)));}
+                catch(Exception e){try{reply.put("ok",false);reply.put("error",e.getMessage()==null?"优惠源连接失败":e.getMessage());}catch(Exception ignored){}}
                 runOnUiThread(()->{if(web!=null&&!isFinishing())web.evaluateJavascript("window.__dealReply && window.__dealReply("+JSONObject.quote(id)+","+reply.toString()+")",null);});});
         }
         @JavascriptInterface public void musicRequest(final String id,final String query){

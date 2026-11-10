@@ -249,7 +249,10 @@
         if (file.dir === true) { folderStack.push({ fid: file.fid, name: file.file_name }); ++generation; listFolder(false); }
         else showFile(file);
       }, 'file-row');
-      row.appendChild(text('span', file.dir ? '▣' : isVideo(file) ? '▶' : '▤', 'file-icon'));
+      var icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); icon.setAttribute('class', 'file-icon');
+      var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+      use.setAttribute('href', file.dir ? '#i-folder' : isVideo(file) ? '#i-play' : '#i-file');
+      icon.appendChild(use); row.appendChild(icon);
       var info = text('span', '', 'file-info'); info.appendChild(text('strong', file.file_name || '未命名文件'));
       info.appendChild(text('small', file.dir ? '文件夹' : fileSize(file.size) + (isVideo(file) ? ' · 点击预览' : ' · 文件'))); row.appendChild(info);
       row.appendChild(text('span', '›', 'file-arrow')); $('netdisk-list').appendChild(row);

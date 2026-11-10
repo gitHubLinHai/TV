@@ -14,7 +14,8 @@
     { name: '哔哩哔哩', url: 'https://search.bilibili.com/all?keyword={query}' },
     { name: '腾讯视频', url: 'https://v.qq.com/x/search/?q={query}' },
     { name: '爱奇艺', url: 'https://so.iqiyi.com/so/q_{query}' },
-    { name: 'Google', url: 'https://www.google.com/search?q={query}' }
+    { name: 'Google', url: 'https://www.google.com/search?q={query}' },
+    { name: 'Yandex', url: 'https://yandex.com/search/?text={query}' }
   ];
   function read(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; } }
   var custom = read('tv_sources', []), history = read('tv_history', []), privacy = window.TVPrivacy;
@@ -224,7 +225,7 @@
     }
     if (s.state === 'logs-ok') {
       window.__lastLogText = s.text;
-      r.textContent = '上传成功！把下面的链接发给开发者即可：\n' + s.url;
+      r.textContent = '上传成功，把下面的链接发给开发者即可：\n' + s.url;
       copy.hidden = false;
       reportEvent('diag', '日志上传成功 ' + s.url);
     } else {

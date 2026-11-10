@@ -98,6 +98,39 @@ def fetch_vod(path,host='www.555yy1.com'):
    if len(raw)>4*1024*1024:raise ValueError('来源页面解压后过大')
   return {'html':raw.decode('utf-8'),'path':target.path+('?' + target.query if target.query else '')}
 
+def fetch_dealagg(sources):
+ # 与 APK 内 DealAgg 相同：只抓订阅出口路径（/rss、/feed），回传 ETag 做条件请求。
+ if not isinstance(sources,list)or not sources or len(sources)>12:raise ValueError('订阅源数量无效')
+ out=[]
+ for src in sources:
+  row={'name':str(src.get('name',''))[:24],'url':str(src.get('url',''))[:500]}
+  try:
+   u=row['url']
+   if not u.startswith('https://')or len(u)>500:raise ValueError('源地址无效：需为 https:// 开头')
+   parts=urlparse(u);host=parts.hostname or ''
+   if not re.fullmatch(r'[A-Za-z0-9.-]+\.[A-Za-z]{2,}',host)or len(host)>80:raise ValueError('源域名无效')
+   if not re.match(r'^/(rss|feed)',parts.path or '',re.I):raise ValueError('只支持订阅源路径（/rss 或 /feed）')
+   headers={'User-Agent':UA,'Accept':'application/rss+xml, application/atom+xml, application/xml, application/json, text/xml;q=0.9, */*;q=0.5','Accept-Encoding':'gzip'}
+   if src.get('etag'):headers['If-None-Match']=src['etag']
+   if src.get('lastModified'):headers['If-Modified-Since']=src['lastModified']
+   req=Request(u,headers=headers)
+   try:
+    with urlopen(req,timeout=20)as response:
+     raw=response.read(2*1024*1024+1)
+     if len(raw)>2*1024*1024:raise ValueError('源响应过大')
+     if (response.headers.get('Content-Encoding')or '').lower()=='gzip':raw=gzip.decompress(raw)
+     body=raw.decode('utf-8','ignore').strip()
+     if not body or body[0] not in '<{[':raise ValueError('源不是 RSS/Atom/JSON 格式')
+     row.update({'ok':True,'notModified':False,'body':body,'etag':response.headers.get('ETag')or '','lastModified':response.headers.get('Last-Modified')or ''})
+   except HTTPError as e:
+    if e.code==304:row.update({'ok':True,'notModified':True,'body':'','etag':src.get('etag',''),'lastModified':src.get('lastModified','')})
+    else:raise ValueError('源返回 HTTP %d'%e.code)
+  except Exception as e:
+   row.update({'ok':False,'error':str(e)})
+  out.append(row)
+  time.sleep(0.4)
+ return out
+
 def fetch_music(query):
  # 与 APK 内 MusicHttp 相同的限制：仅网易来源的榜单/搜索/取址，不下载音频本体。
  if not isinstance(query,str)or len(query)>256:raise ValueError('不支持的音乐请求')
@@ -190,13 +223,16 @@ class Handler(SimpleHTTPRequestHandler):
   except (BrokenPipeError,ConnectionResetError):pass
   except Exception:self.send_error(502,'Media unavailable')
  def do_POST(self):
-  if self.path not in ('/api/netdisk','/api/vod','/api/music','/api/deal'):self.send_error(404);return
+  if self.path not in ('/api/netdisk','/api/vod','/api/music','/api/deal','/api/dealagg'):self.send_error(404);return
   origin=self.headers.get('Origin','')
   if origin and origin not in ['http://127.0.0.1:'+str(self.server.server_port),'http://localhost:'+str(self.server.server_port)]:self.send_error(403);return
   try:
    size=int(self.headers.get('Content-Length',0))
    if not 0<size<=32768:raise ValueError('请求大小无效')
-   data=json.loads(self.rfile.read(size));payload=fetch_vod(data.get('path'),data.get('host'))if self.path=='/api/vod'and not data.get('api')else fetch_api(data.get('api'),data.get('query'))if self.path=='/api/vod'and data.get('api')else fetch_music(data.get('q'))if self.path=='/api/music'else fetch_deal(data.get('deal_url'))if self.path=='/api/deal'else rpc(data['action'],data.get('args',{}));result={'ok':True,'data':payload}
+   data=json.loads(self.rfile.read(size))
+   if self.path=='/api/dealagg':payload={'results':fetch_dealagg(data)}
+   else:payload=fetch_vod(data.get('path'),data.get('host'))if self.path=='/api/vod'and not data.get('api')else fetch_api(data.get('api'),data.get('query'))if self.path=='/api/vod'and data.get('api')else fetch_music(data.get('q'))if self.path=='/api/music'else fetch_deal(data.get('deal_url'))if self.path=='/api/deal'else rpc(data['action'],data.get('args',{}))
+   result={'ok':True,'data':payload}
   except Exception as e:result={'ok':False,'error':str(e)}
   encoded=json.dumps(result,ensure_ascii=False).encode('utf-8');self.send_response(200);self.send_header('Content-Type','application/json; charset=utf-8');self.send_header('Content-Length',str(len(encoded)));self.end_headers();self.wfile.write(encoded)
  def log_message(self,format,*args):

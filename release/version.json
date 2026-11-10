@@ -1,14 +1,10 @@
 {
   "appId": "com.seagull.tv",
-  "versionCode": 163,
-  "versionName": "1.0.63",
-  "minShellVersion": 15,
-  "wgt": "TV-v1.0.63.wgt",
-  "wgtSize": 67823,
-  "wgtSha256": "e54389091d48d5f14fcbf085c2bbb939ded36b1c2b60c1e1a800ede69c36c6bc",
-  "notes": "播放历史修复（接口源记录失效/自动续播不触发/点击无反应三处）；APK 内嵌网页版同款播放：详情页直接播放，失败自动切原生播放器，播完自动下一集，可一键切原生（手势/倍速/字幕）",
-  "apk": "TV-v1.0.63.apk",
-  "apkCode": 163,
-  "apkSize": 3482290,
-  "apkSha256": "d56bc4ef2f9d8b5f28a0800eaf23474e83c117bfdc9c242a7db8c7ff858dd5b3"
+  "versionCode": 165,
+  "versionName": "1.0.65",
+  "minShellVersion": 33,
+  "wgt": "TV-v1.0.65.wgt",
+  "wgtSize": 74378,
+  "wgtSha256": "162ce291567f82bf2ae242a70c8773a9672d73009cac91e780274ac20534a9ff",
+  "notes": "网页搜索新增 Yandex 源（yandex.com，俄语/东欧内容检索，需设备可访问外网）"
 }
